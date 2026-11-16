@@ -1,0 +1,13 @@
+FROM node:22-alpine
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install --omit=dev
+
+COPY src ./src
+COPY migrations ./migrations
+
+USER node
+EXPOSE 8080
+# migracje i dane demo uruchamiają się przy starcie serwera
+CMD ["node", "src/server.js"]

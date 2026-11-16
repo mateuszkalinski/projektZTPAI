@@ -1,0 +1,12 @@
+# sekrety
+.env
+
+# zależności i buildy
+node_modules/
+frontend/dist/
+
+# IDE / system
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

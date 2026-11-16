@@ -1,0 +1,49 @@
+### Szybkie testy ręczne (rozszerzenie REST Client w VS Code)
+@baseUrl = http://localhost:8080/api
+@token = wklej-accessToken-z-logowania
+
+### Rejestracja
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{ "username": "mateusz", "email": "mateusz@test.pl", "password": "haslo12345" }
+
+### Logowanie
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "username": "mateusz", "password": "haslo12345" }
+
+### Ja
+GET {{baseUrl}}/users/me
+Authorization: Bearer {{token}}
+
+### Rozgrywki
+GET {{baseUrl}}/competitions
+Authorization: Bearer {{token}}
+
+### Nowa liga (Liga Mistrzów + Premier League)
+POST {{baseUrl}}/leagues
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "Znajomi", "competitionIds": [1, 2] }
+
+### Moje ligi
+GET {{baseUrl}}/leagues
+Authorization: Bearer {{token}}
+
+### Terminarz ligi z moimi typami
+GET {{baseUrl}}/leagues/1/fixtures?page=0&size=10
+Authorization: Bearer {{token}}
+
+### Typ na mecz
+PUT {{baseUrl}}/leagues/1/matches/4/prediction
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "homeScore": 2, "awayScore": 1 }
+
+### Tabela ligi
+GET {{baseUrl}}/leagues/1/leaderboard
+Authorization: Bearer {{token}}
