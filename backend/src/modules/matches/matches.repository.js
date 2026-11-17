@@ -1,3 +1,5 @@
+const NO_STAGE = "-";
+
 // Mecz zawsze zwracamy razem z rozgrywkami i drużynami – jednym zapytaniem z JOIN-ami (bez N+1).
 const SELECT_MATCH = `
   SELECT m.id,
@@ -15,7 +17,7 @@ const SELECT_MATCH = `
   JOIN teams awt ON awt.id = m.away_team_id`;
 
 // Buduje WHERE z opcjonalnych filtrów; wartości zawsze jako parametry ($1, $2...), nigdy wklejane w SQL.
-function buildWhere({ competitionIds, status, teamId, from, to } = {}) {
+function buildWhere({ competitionIds, status, teamId, from, to, stage } = {}) {
   const conditions = [];
   const params = [];
   const param = (value) => {
@@ -30,6 +32,9 @@ function buildWhere({ competitionIds, status, teamId, from, to } = {}) {
   }
   if (from) conditions.push(`m.kickoff_at >= ${param(from)}`);
   if (to) conditions.push(`m.kickoff_at < ${param(to)}`);
+  // kolejka/etap; "-" = mecze bez podanego etapu
+  if (stage === NO_STAGE) conditions.push("m.stage IS NULL");
+  else if (stage) conditions.push(`m.stage = ${param(stage)}`);
   return { where: conditions.length ? `WHERE ${conditions.join(" AND ")}` : "", params };
 }
 
@@ -48,6 +53,29 @@ function createMatchesRepository(db) {
         [...params, size, page * size]
       );
       return { rows, total };
+    },
+
+    /**
+     * Kolejki (etapy) wybranych rozgrywek w kolejności rozgrywania.
+     * "settled" = mecze już rozstrzygnięte (zakończone, przełożone albo odwołane).
+     */
+    async listRounds(competitionIds) {
+      const { rows } = await db.query(
+        `SELECT m.competition_id AS "competitionId",
+                c.name AS "competitionName",
+                COALESCE(m.stage, '-') AS stage,
+                MIN(m.kickoff_at) AS "startsAt",
+                MAX(m.kickoff_at) AS "endsAt",
+                COUNT(*) AS matches,
+                COUNT(*) FILTER (WHERE m.status IN ('FINISHED', 'POSTPONED', 'CANCELLED')) AS settled,
+                COUNT(*) FILTER (WHERE m.status = 'FINISHED') AS finished
+         FROM matches m JOIN competitions c ON c.id = m.competition_id
+         WHERE m.competition_id = ANY($1)
+         GROUP BY m.competition_id, c.name, COALESCE(m.stage, '-')
+         ORDER BY MIN(m.kickoff_at)`,
+        [competitionIds]
+      );
+      return rows;
     },
 
     async insert({ competitionId, homeTeamId, awayTeamId, kickoffAt, stage }) {

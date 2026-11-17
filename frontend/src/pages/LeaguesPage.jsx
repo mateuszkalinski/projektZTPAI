@@ -9,7 +9,7 @@ export default function LeaguesPage() {
   const [competitions, setCompetitions] = useState([])
   const [error, setError] = useState(null)
 
-  const [newLeague, setNewLeague] = useState({ name: '', description: '', competitionIds: [] })
+  const [newLeague, setNewLeague] = useState({ name: '', description: '', isPublic: false, competitionIds: [] })
   const [createError, setCreateError] = useState(null)
   const [inviteCode, setInviteCode] = useState('')
   const [joinError, setJoinError] = useState(null)
@@ -58,7 +58,7 @@ export default function LeaguesPage() {
       {leagues === null ? (
         <p>Ładowanie…</p>
       ) : leagues.length === 0 ? (
-        <p className="muted">Nie należysz jeszcze do żadnej ligi. Załóż własną albo dołącz kodem od znajomego.</p>
+        <p className="muted">Nie należysz jeszcze do żadnej ligi. Załóż własną, dołącz kodem od znajomego albo wybierz ligę publiczną.</p>
       ) : (
         <ul className="list">
           {leagues.map((l) => (
@@ -66,12 +66,15 @@ export default function LeaguesPage() {
               <Link to={`/leagues/${l.id}`}><strong>{l.name}</strong></Link>
               <span className="muted">
                 {l.competitions.map((c) => c.name).join(', ')} · {l.memberCount} os.
-                {l.myRole === 'OWNER' ? ' · właściciel' : ''}
+                {l.isPublic ? ' · publiczna' : ''}
+                {l.myRole === 'OWNER' ? ' · założyciel' : ''}
               </span>
             </li>
           ))}
         </ul>
       )}
+
+      <PublicLeagues />
 
       <div className="grid2">
         <form className="card stack" onSubmit={createLeague}>
@@ -96,12 +99,25 @@ export default function LeaguesPage() {
               </label>
             ))}
           </fieldset>
+          <fieldset>
+            <legend>Widoczność</legend>
+            <label className="inline">
+              <input type="radio" name="visibility" checked={!newLeague.isPublic}
+                     onChange={() => setNewLeague({ ...newLeague, isPublic: false })} />
+              Prywatna – dołączenie tylko kodem zaproszenia
+            </label>
+            <label className="inline">
+              <input type="radio" name="visibility" checked={newLeague.isPublic}
+                     onChange={() => setNewLeague({ ...newLeague, isPublic: true })} />
+              Publiczna – widoczna na liście lig, każdy może dołączyć
+            </label>
+          </fieldset>
           <ErrorMessage error={createError} />
           <button>Załóż ligę</button>
         </form>
 
         <form className="card stack" onSubmit={joinLeague}>
-          <h2>Dołącz do ligi</h2>
+          <h2>Dołącz kodem</h2>
           <label>
             Kod zaproszenia
             <input value={inviteCode} required maxLength={12} placeholder="np. K7M2QX9A"
@@ -112,5 +128,98 @@ export default function LeaguesPage() {
         </form>
       </div>
     </div>
+  )
+}
+
+const TOP = 5
+const PAGE_SIZE = 20
+
+/** Ligi publiczne: top 5 największych, po rozwinięciu pełna lista z wyszukiwaniem po nazwie */
+function PublicLeagues() {
+  const navigate = useNavigate()
+  const [expanded, setExpanded] = useState(false)
+  const [query, setQuery] = useState('')
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(0)
+  const [data, setData] = useState(null)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    const params = expanded ? { q: search, page, size: PAGE_SIZE } : { size: TOP }
+    api('/leagues/public', { query: params }).then(setData).catch(setError)
+  }, [expanded, search, page])
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setSearch(query.trim())
+      setPage(0)
+    }, 300)
+    return () => clearTimeout(t)
+  }, [query])
+
+  async function join(league) {
+    setError(null)
+    try {
+      await api(`/leagues/${league.id}/join`, { method: 'POST' })
+      navigate(`/leagues/${league.id}`)
+    } catch (err) {
+      setError(err)
+    }
+  }
+
+  if (data && data.totalElements === 0 && !search) return null
+
+  return (
+    <section className="card stack">
+      <h2>Ligi publiczne</h2>
+      {expanded && (
+        <input type="search" placeholder="Szukaj ligi po nazwie…" value={query}
+               onChange={(e) => setQuery(e.target.value)} aria-label="Szukaj ligi" />
+      )}
+      <ErrorMessage error={error} />
+
+      {data === null ? (
+        <p>Ładowanie…</p>
+      ) : data.content.length === 0 ? (
+        <p className="muted">Brak lig pasujących do „{search}”.</p>
+      ) : (
+        <table>
+          <thead>
+            <tr><th>Liga</th><th>Rozgrywki</th><th className="num">Gracze</th><th /></tr>
+          </thead>
+          <tbody>
+            {data.content.map((l) => (
+              <tr key={l.id}>
+                <td><strong>{l.name}</strong></td>
+                <td className="muted">{l.competitions.map((c) => c.name).join(', ')}</td>
+                <td className="num">{l.memberCount}</td>
+                <td className="actions">
+                  {l.isMember
+                    ? <Link to={`/leagues/${l.id}`}>Otwórz</Link>
+                    : <button className="link" onClick={() => join(l)}>Dołącz</button>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {expanded && data && data.totalPages > 1 && (
+        <div className="pager">
+          <button className="secondary" disabled={page === 0} onClick={() => setPage(page - 1)}>‹ Poprzednia</button>
+          <span>{data.page + 1} / {data.totalPages}</span>
+          <button className="secondary" disabled={page + 1 >= data.totalPages} onClick={() => setPage(page + 1)}>Następna ›</button>
+        </div>
+      )}
+
+      {!expanded && data && data.totalElements > TOP && (
+        <button className="link" onClick={() => setExpanded(true)}>
+          Pokaż wszystkie ({data.totalElements}) i szukaj ›
+        </button>
+      )}
+      {expanded && (
+        <button className="link" onClick={() => { setExpanded(false); setQuery('') }}>‹ Zwiń do top {TOP}</button>
+      )}
+    </section>
   )
 }

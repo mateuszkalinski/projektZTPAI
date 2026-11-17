@@ -36,6 +36,15 @@ function loadConfig(env = process.env) {
       password: env.ADMIN_PASSWORD || "",
     },
     loadDemoData: (env.LOAD_DEMO_DATA ?? "true") === "true",
+    footballData: {
+      // bez tokenu synchronizacja jest wyłączona, a aplikacja działa na danych demo
+      token: env.FOOTBALL_DATA_TOKEN || "",
+      competitions: (env.FOOTBALL_DATA_COMPETITIONS || "CL,PL")
+        .split(",")
+        .map((c) => c.trim().toUpperCase())
+        .filter(Boolean),
+      intervalMinutes: Number(env.FOOTBALL_DATA_INTERVAL_MINUTES || 10),
+    },
   };
 
   if (config.jwtSecret && config.jwtSecret.length < 32) {

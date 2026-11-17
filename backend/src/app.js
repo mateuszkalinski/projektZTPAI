@@ -25,6 +25,10 @@ const { createPredictionsRepository } = require("./modules/predictions/predictio
 const { createPredictionsService } = require("./modules/predictions/predictions.service");
 const { createPredictionsRouter } = require("./modules/predictions/predictions.routes");
 const { registerScoringListener } = require("./modules/predictions/scoring.listener");
+const { createFootballDataClient } = require("./modules/sync/footballData.client");
+const { createSyncRepository } = require("./modules/sync/sync.repository");
+const { createSyncService } = require("./modules/sync/sync.service");
+const { createSyncRouter } = require("./modules/sync/sync.routes");
 
 /**
  * Składa aplikację: repository -> service -> router. Nie uruchamia serwera (to robi server.js),
@@ -43,7 +47,7 @@ function createApp({ pool, config, now = () => new Date(), events = createEventB
   const authService = createAuthService({ usersRepository, jwtSecret: config.jwtSecret, jwtExpiresIn: config.jwtExpiresIn });
   const competitionsService = createCompetitionsService({ competitionsRepository });
   const matchesService = createMatchesService({ matchesRepository, competitionsService, events, now });
-  const leaguesService = createLeaguesService({ leaguesRepository, competitionsRepository });
+  const leaguesService = createLeaguesService({ leaguesRepository, competitionsRepository, matchesRepository });
   const predictionsService = createPredictionsService({
     predictionsRepository,
     matchesRepository,
@@ -52,6 +56,13 @@ function createApp({ pool, config, now = () => new Date(), events = createEventB
     now,
   });
   registerScoringListener({ events, predictionsService, logger });
+  const syncService = createSyncService({
+    client: createFootballDataClient({ token: config.footballData.token }),
+    syncRepository: createSyncRepository(pool),
+    events,
+    competitionCodes: config.footballData.competitions,
+    logger,
+  });
 
   // ---------- HTTP ----------
   const app = express();
@@ -77,10 +88,16 @@ function createApp({ pool, config, now = () => new Date(), events = createEventB
     createLeaguesRouter({ leaguesService, predictionsRouter: createPredictionsRouter({ predictionsService }) })
   );
 
+  app.use("/api/sync", auth, createSyncRouter({ syncService, enabled: Boolean(config.footballData.token) }));
+
   app.use(notFoundHandler);
   app.use(errorHandler(logger));
 
-  return { app, events, services: { usersService, authService, matchesService, leaguesService, predictionsService } };
+  return {
+    app,
+    events,
+    services: { usersService, authService, matchesService, leaguesService, predictionsService, syncService },
+  };
 }
 
 module.exports = { createApp };

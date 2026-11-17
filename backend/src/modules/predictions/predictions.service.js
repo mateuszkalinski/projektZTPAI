@@ -24,11 +24,43 @@ function createPredictionsService({
   }
 
   return {
-    /** Terminarz ligi (tylko jej rozgrywki) z moimi typami – główny widok aplikacji */
-    async fixtures(user, leagueId, { status, from, to, page, size }) {
+    /**
+     * Kolejki ligi pogrupowane po rozgrywkach. Dla każdych rozgrywek wskazuje kolejkę bieżącą:
+     * pierwszą, w której są jeszcze nierozstrzygnięte mecze (czyli tę do typowania albo właśnie
+     * rozliczaną), a gdy wszystko rozegrane – ostatnią.
+     */
+    async rounds(user, leagueId) {
       await leaguesService.requireMember(leagueId, user.id);
       const competitionIds = await leaguesRepository.competitionIds(leagueId);
-      const { rows, total } = await matchesRepository.findPage({ competitionIds, status, from, to }, { page, size });
+      const rows = await matchesRepository.listRounds(competitionIds);
+
+      const groups = new Map();
+      for (const { competitionId, competitionName, ...round } of rows) {
+        if (!groups.has(competitionId)) {
+          groups.set(competitionId, { competition: { id: competitionId, name: competitionName }, rounds: [] });
+        }
+        groups.get(competitionId).rounds.push(round);
+      }
+      return [...groups.values()].map((group) => {
+        const current = group.rounds.find((r) => r.settled < r.matches) ?? group.rounds.at(-1);
+        return { ...group, currentStage: current?.stage ?? null };
+      });
+    },
+
+    /** Terminarz ligi (tylko jej rozgrywki) z moimi typami – główny widok aplikacji */
+    async fixtures(user, leagueId, { competitionId, stage, status, from, to, page, size }) {
+      await leaguesService.requireMember(leagueId, user.id);
+      let competitionIds = await leaguesRepository.competitionIds(leagueId);
+      if (competitionId) {
+        if (!competitionIds.includes(competitionId)) {
+          throw conflict("COMPETITION_NOT_IN_LEAGUE", "Te rozgrywki nie należą do tej ligi");
+        }
+        competitionIds = [competitionId];
+      }
+      const { rows, total } = await matchesRepository.findPage(
+        { competitionIds, stage, status, from, to },
+        { page, size }
+      );
 
       const mine = await repo.findMineForMatches(user.id, leagueId, rows.map((m) => m.id));
       const byMatch = new Map(mine.map((p) => [p.matchId, p]));

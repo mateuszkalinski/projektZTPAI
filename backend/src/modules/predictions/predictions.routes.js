@@ -12,10 +12,18 @@ function createPredictionsRouter({ predictionsService: service }) {
   const leagueId = (req) => parseId(req.params.leagueId, "leagueId");
   const matchId = (req) => parseId(req.params.matchId, "matchId");
 
+  // lista kolejek ligi + która jest bieżąca
+  router.get("/rounds", async (req, res) => {
+    res.json(await service.rounds(req.user, leagueId(req)));
+  });
+
+  // terminarz; zwykle wołany dla jednej kolejki: ?competitionId=1&stage=Faza ligowa, 5. kolejka
   router.get(
     "/fixtures",
     query({
       ...pageQuery,
+      competitionId: { type: "int", min: 1 },
+      stage: { type: "string", max: 50 },
       status: { type: "enum", values: ["SCHEDULED", "FINISHED", "POSTPONED", "CANCELLED"] },
       from: { type: "date" },
       to: { type: "date" },

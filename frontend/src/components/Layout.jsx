@@ -26,6 +26,10 @@ export default function Layout() {
       <main className="content">
         <Outlet />
       </main>
+      <footer className="footer muted small">
+        Football data provided by the{' '}
+        <a href="https://www.football-data.org" target="_blank" rel="noreferrer">Football-Data.org</a> API
+      </footer>
     </div>
   )
 }

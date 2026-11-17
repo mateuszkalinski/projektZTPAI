@@ -10,7 +10,7 @@ function registerScoringListener({ events, predictionsService, logger = console 
     setImmediate(async () => {
       try {
         const count = await predictionsService.scoreMatch(matchId);
-        logger.info(`[scoring] rozliczono ${count} typów dla meczu ${matchId}`);
+        if (count > 0) logger.info(`[scoring] mecz ${matchId}: rozliczone typy: ${count}`);
         events.emit(EVENTS.PREDICTIONS_SCORED, { matchId, count });
       } catch (err) {
         logger.error(`[scoring] błąd rozliczania meczu ${matchId}`, err);

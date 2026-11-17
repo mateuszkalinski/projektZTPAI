@@ -51,7 +51,10 @@ beforeEach(() => {
 
   service = createPredictionsService({
     predictionsRepository,
-    matchesRepository: { findById: async (id) => state.matches.get(id) ?? null },
+    matchesRepository: {
+      findById: async (id) => state.matches.get(id) ?? null,
+      listRounds: async () => state.rounds ?? [],
+    },
     leaguesRepository: { competitionIds: async (leagueId) => state.leagueCompetitions[leagueId] ?? [] },
     leaguesService: {
       requireMember: async (leagueId, userId) => {
@@ -124,4 +127,24 @@ test("rozliczenie meczu przyznaje punkty 3/1/0 wszystkim typom", async () => {
 
   assert.equal(await service.scoreMatch(50), 3);
   assert.deepEqual(state.predictions.map((p) => p.points), [3, 1, 0]);
+});
+
+test("bieżąca kolejka to pierwsza z nierozstrzygniętymi meczami (osobno dla każdych rozgrywek)", async () => {
+  state.rounds = [
+    { competitionId: CL, competitionName: "Liga Mistrzów", stage: "Faza ligowa, 4. kolejka", matches: 18, settled: 18 },
+    { competitionId: PL, competitionName: "Premier League", stage: "12. kolejka", matches: 10, settled: 10 },
+    { competitionId: CL, competitionName: "Liga Mistrzów", stage: "Faza ligowa, 5. kolejka", matches: 18, settled: 7 },
+    { competitionId: CL, competitionName: "Liga Mistrzów", stage: "Faza ligowa, 6. kolejka", matches: 18, settled: 0 },
+    { competitionId: PL, competitionName: "Premier League", stage: "13. kolejka", matches: 10, settled: 10 },
+  ];
+  const groups = await service.rounds(me, 200);
+  const cl = groups.find((g) => g.competition.id === CL);
+  const pl = groups.find((g) => g.competition.id === PL);
+  assert.equal(cl.rounds.length, 3);
+  assert.equal(cl.currentStage, "Faza ligowa, 5. kolejka"); // w trakcie rozliczania
+  assert.equal(pl.currentStage, "13. kolejka"); // wszystko rozegrane -> ostatnia
+});
+
+test("terminarz dla rozgrywek spoza ligi jest odrzucany", async () => {
+  await rejectsWith(service.fixtures(me, 100, { competitionId: PL, page: 0, size: 20 }), "COMPETITION_NOT_IN_LEAGUE");
 });

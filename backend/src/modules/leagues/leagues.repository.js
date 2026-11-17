@@ -21,7 +21,8 @@ function createLeaguesRepository(db) {
     // ---------- ligi ----------
     async findById(id) {
       const { rows } = await db.query(
-        `SELECT l.id, l.name, l.description, l.invite_code AS "inviteCode", l.created_at AS "createdAt",
+        `SELECT l.id, l.name, l.description, l.is_public AS "isPublic", l.invite_code AS "inviteCode",
+                l.created_at AS "createdAt",
                 json_build_object('id', u.id, 'username', u.username) AS owner,
                 ${COMPETITIONS_JSON} AS competitions,
                 ${MEMBER_COUNT} AS "memberCount"
@@ -47,7 +48,7 @@ function createLeaguesRepository(db) {
 
     async listForUser(userId) {
       const { rows } = await db.query(
-        `SELECT l.id, l.name, lm.role AS "myRole",
+        `SELECT l.id, l.name, l.is_public AS "isPublic", lm.role AS "myRole",
                 ${COMPETITIONS_JSON} AS competitions,
                 ${MEMBER_COUNT} AS "memberCount"
          FROM league_memberships lm JOIN leagues l ON l.id = lm.league_id
@@ -58,16 +59,40 @@ function createLeaguesRepository(db) {
       return rows;
     },
 
-    async insert({ name, description, inviteCode, ownerId }) {
+    // Ligi publiczne – od największych; isMember mówi, czy pytający już w nich jest
+    async findPublicPage({ q, page, size, userId }) {
+      const where = "WHERE l.is_public AND ($1::text IS NULL OR l.name ILIKE '%' || $1 || '%')";
+      const search = q || null;
+      const total = (await db.query(`SELECT count(*) AS count FROM leagues l ${where}`, [search])).rows[0].count;
       const { rows } = await db.query(
-        "INSERT INTO leagues (name, description, invite_code, owner_id) VALUES ($1, $2, $3, $4) RETURNING id",
-        [name, description ?? null, inviteCode, ownerId]
+        `SELECT l.id, l.name, l.description,
+                ${COMPETITIONS_JSON} AS competitions,
+                ${MEMBER_COUNT} AS "memberCount",
+                EXISTS (SELECT 1 FROM league_memberships x WHERE x.league_id = l.id AND x.user_id = $2) AS "isMember"
+         FROM leagues l ${where}
+         ORDER BY "memberCount" DESC, l.name
+         LIMIT $3 OFFSET $4`,
+        [search, userId, size, page * size]
+      );
+      return { rows, total };
+    },
+
+    async insert({ name, description, isPublic, inviteCode, ownerId }) {
+      const { rows } = await db.query(
+        `INSERT INTO leagues (name, description, is_public, invite_code, owner_id)
+         VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+        [name, description ?? null, Boolean(isPublic), inviteCode, ownerId]
       );
       return rows[0].id;
     },
 
-    async update(id, { name, description }) {
-      await db.query("UPDATE leagues SET name = $2, description = $3 WHERE id = $1", [id, name, description ?? null]);
+    async update(id, { name, description, isPublic }) {
+      await db.query("UPDATE leagues SET name = $2, description = $3, is_public = $4 WHERE id = $1", [
+        id,
+        name,
+        description ?? null,
+        Boolean(isPublic),
+      ]);
     },
 
     async setInviteCode(id, inviteCode) {
@@ -92,7 +117,7 @@ function createLeaguesRepository(db) {
     },
 
     async delete(id) {
-      // członkostwa, typy i powiązania z rozgrywkami usuwa ON DELETE CASCADE
+      // członkostwa, typy, bany i powiązania z rozgrywkami usuwa ON DELETE CASCADE
       await db.query("DELETE FROM leagues WHERE id = $1", [id]);
     },
 
@@ -132,25 +157,91 @@ function createLeaguesRepository(db) {
       return rows;
     },
 
-    // Tabela ligi: suma punktów każdego członka (także z 0 pkt, dzięki LEFT JOIN)
-    async leaderboard(leagueId, { page, size }) {
-      const total = (
-        await db.query("SELECT count(*) AS count FROM league_memberships WHERE league_id = $1", [leagueId])
-      ).rows[0].count;
+    // ---------- bany ----------
+    async isBanned(leagueId, userId) {
+      const { rowCount } = await db.query("SELECT 1 FROM league_bans WHERE league_id = $1 AND user_id = $2", [
+        leagueId,
+        userId,
+      ]);
+      return rowCount > 0;
+    },
+
+    async insertBan(leagueId, userId, bannedBy) {
+      await db.query(
+        `INSERT INTO league_bans (league_id, user_id, banned_by) VALUES ($1, $2, $3)
+         ON CONFLICT (league_id, user_id) DO NOTHING`,
+        [leagueId, userId, bannedBy]
+      );
+    },
+
+    async deleteBan(leagueId, userId) {
+      const { rowCount } = await db.query("DELETE FROM league_bans WHERE league_id = $1 AND user_id = $2", [
+        leagueId,
+        userId,
+      ]);
+      return rowCount > 0;
+    },
+
+    async listBans(leagueId) {
       const { rows } = await db.query(
-        `SELECT u.id AS "userId", u.username,
-                COALESCE(SUM(p.points), 0) AS points,
-                COUNT(p.points) AS "scoredPredictions"
-         FROM league_memberships lm
-         JOIN users u ON u.id = lm.user_id
-         LEFT JOIN predictions p ON p.league_id = lm.league_id AND p.user_id = lm.user_id
-         WHERE lm.league_id = $1
-         GROUP BY u.id, u.username
-         ORDER BY points DESC, u.username
-         LIMIT $2 OFFSET $3`,
-        [leagueId, size, page * size]
+        `SELECT json_build_object('id', u.id, 'username', u.username) AS user,
+                b.banned_at AS "bannedAt",
+                bb.username AS "bannedBy"
+         FROM league_bans b
+         JOIN users u ON u.id = b.user_id
+         LEFT JOIN users bb ON bb.id = b.banned_by
+         WHERE b.league_id = $1
+         ORDER BY b.banned_at DESC`,
+        [leagueId]
+      );
+      return rows;
+    },
+
+    // ---------- tabela ----------
+    /**
+     * Tabela ligi: punkty każdego członka (także 0 pkt dzięki LEFT JOIN) i miejsce.
+     * Miejsce liczymy RANK()-iem na całej lidze, a dopiero potem filtrujemy po nicku –
+     * wyszukany gracz ma więc swoje prawdziwe miejsce. Remis punktowy = to samo miejsce.
+     */
+    async standings(leagueId, { q, page, size }) {
+      const ranked = `
+        WITH ranked AS (
+          SELECT u.id AS "userId", u.username, lm.role, lm.joined_at AS "joinedAt",
+                 COALESCE(SUM(p.points), 0) AS points,
+                 COUNT(p.points) AS "scoredPredictions",
+                 RANK() OVER (ORDER BY COALESCE(SUM(p.points), 0) DESC) AS position
+          FROM league_memberships lm
+          JOIN users u ON u.id = lm.user_id
+          LEFT JOIN predictions p ON p.league_id = lm.league_id AND p.user_id = lm.user_id
+          WHERE lm.league_id = $1
+          GROUP BY u.id, u.username, lm.role, lm.joined_at
+        )`;
+      const filter = `WHERE ($2::text IS NULL OR username ILIKE '%' || $2 || '%')`;
+      const search = q || null;
+      const total = (await db.query(`${ranked} SELECT count(*) AS count FROM ranked ${filter}`, [leagueId, search]))
+        .rows[0].count;
+      const { rows } = await db.query(
+        `${ranked} SELECT * FROM ranked ${filter} ORDER BY position, username LIMIT $3 OFFSET $4`,
+        [leagueId, search, size, page * size]
       );
       return { rows, total };
+    },
+
+    // Punkty wybranych graczy w wybranych kolejkach (kolejka = rozgrywki + etap)
+    async roundPoints(leagueId, userIds, rounds) {
+      if (!userIds.length || !rounds.length) return [];
+      const { rows } = await db.query(
+        `SELECT p.user_id AS "userId", m.competition_id AS "competitionId", COALESCE(m.stage, '-') AS stage,
+                SUM(p.points) AS points
+         FROM predictions p
+         JOIN matches m ON m.id = p.match_id
+         JOIN unnest($3::int[], $4::text[]) AS r(competition_id, stage)
+           ON r.competition_id = m.competition_id AND r.stage = COALESCE(m.stage, '-')
+         WHERE p.league_id = $1 AND p.user_id = ANY($2) AND p.points IS NOT NULL
+         GROUP BY p.user_id, m.competition_id, COALESCE(m.stage, '-')`,
+        [leagueId, userIds, rounds.map((r) => r.competitionId), rounds.map((r) => r.stage)]
+      );
+      return rows;
     },
   };
 }

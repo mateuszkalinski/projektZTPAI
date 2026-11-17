@@ -119,6 +119,7 @@ module.exports = {
           id: { type: "integer" },
           name: { type: "string" },
           description: { type: "string", nullable: true },
+          isPublic: { type: "boolean", description: "publiczna = na liście lig publicznych, dołączenie bez kodu" },
           inviteCode: { type: "string", nullable: true, description: "widoczny tylko dla członków" },
           owner: ref("UserSummary"),
           competitions: { type: "array", items: ref("Competition") },
@@ -133,8 +134,14 @@ module.exports = {
         properties: {
           name: { type: "string" },
           description: { type: "string" },
+          isPublic: { type: "boolean", default: false },
           competitionIds: { type: "array", items: { type: "integer" }, minItems: 1 },
         },
+      },
+      LeagueUpdate: {
+        type: "object",
+        required: ["name"],
+        properties: { name: { type: "string" }, description: { type: "string" }, isPublic: { type: "boolean" } },
       },
       Member: {
         type: "object",
@@ -143,11 +150,18 @@ module.exports = {
       LeaderboardEntry: {
         type: "object",
         properties: {
-          position: { type: "integer" },
+          position: { type: "integer", description: "miejsce w całej lidze (remis = to samo miejsce)" },
           userId: { type: "integer" },
           username: { type: "string" },
+          role: { type: "string", enum: ["OWNER", "MEMBER"] },
+          joinedAt: { type: "string", format: "date-time" },
           points: { type: "integer" },
           scoredPredictions: { type: "integer" },
+          roundPoints: {
+            type: "array",
+            items: { type: "integer", nullable: true },
+            description: "punkty w kolejnych pozycjach z listy rounds (null = brak typów)",
+          },
         },
       },
       Prediction: {
@@ -296,9 +310,41 @@ module.exports = {
         responses: { 200: ok("Dołączono", ref("League")), ...errors(400, 404, 409) },
       },
     },
+    "/api/leagues/public": {
+      get: {
+        tags: ["Leagues"],
+        summary: "Ligi publiczne, od największych (wyszukiwanie po nazwie)",
+        parameters: [...pageParams, { name: "q", in: "query", schema: { type: "string" } }],
+        responses: { 200: ok("OK", page(ref("League"))) },
+      },
+    },
+    "/api/leagues/{id}/join": {
+      post: {
+        tags: ["Leagues"],
+        summary: "Dołączenie do ligi publicznej bez kodu",
+        parameters: [idParam()],
+        responses: { 200: ok("Dołączono", ref("League")), ...errors(403, 404, 409) },
+      },
+    },
+    "/api/leagues/{id}/bans": {
+      get: {
+        tags: ["Leagues"],
+        summary: "Zbanowani gracze (założyciel / admin)",
+        parameters: [idParam()],
+        responses: { 200: ok("OK", { type: "array", items: { type: "object" } }), ...errors(403, 404) },
+      },
+    },
+    "/api/leagues/{id}/bans/{userId}": {
+      delete: {
+        tags: ["Leagues"],
+        summary: "Przywrócenie zbanowanego gracza (założyciel / admin)",
+        parameters: [idParam(), idParam("userId")],
+        responses: { 204: ok("Przywrócono"), ...errors(403, 404) },
+      },
+    },
     "/api/leagues/{id}": {
       get: { tags: ["Leagues"], summary: "Szczegóły ligi (tylko członkowie)", parameters: [idParam()], responses: { 200: ok("OK", ref("League")), ...errors(403, 404) } },
-      put: { tags: ["Leagues"], summary: "Edycja (właściciel)", parameters: [idParam()], requestBody: body(ref("LeagueInput")), responses: { 200: ok("OK", ref("League")), ...errors(400, 403, 404) } },
+      put: { tags: ["Leagues"], summary: "Edycja nazwy, opisu i widoczności (założyciel / admin)", parameters: [idParam()], requestBody: body(ref("LeagueUpdate")), responses: { 200: ok("OK", ref("League")), ...errors(400, 403, 404) } },
       delete: { tags: ["Leagues"], summary: "Usunięcie (właściciel)", parameters: [idParam()], responses: { 204: ok("Usunięto"), ...errors(403, 404) } },
     },
     "/api/leagues/{id}/leave": {
@@ -311,7 +357,7 @@ module.exports = {
       get: { tags: ["Leagues"], summary: "Członkowie ligi", parameters: [idParam()], responses: { 200: ok("OK", { type: "array", items: ref("Member") }), ...errors(403, 404) } },
     },
     "/api/leagues/{id}/members/{userId}": {
-      delete: { tags: ["Leagues"], summary: "Usunięcie członka (właściciel)", parameters: [idParam(), idParam("userId")], responses: { 204: ok("Usunięto"), ...errors(403, 404, 409) } },
+      delete: { tags: ["Leagues"], summary: "Usunięcie gracza z ligi = ban (założyciel / admin)", parameters: [idParam(), idParam("userId")], responses: { 204: ok("Usunięto"), ...errors(403, 404, 409) } },
     },
     "/api/leagues/{id}/transfer-ownership": {
       post: {
@@ -323,15 +369,74 @@ module.exports = {
       },
     },
     "/api/leagues/{id}/leaderboard": {
-      get: { tags: ["Leagues"], summary: "Tabela ligi", parameters: [idParam(), ...pageParams], responses: { 200: ok("OK", page(ref("LeaderboardEntry"))), ...errors(403, 404) } },
+      get: {
+        tags: ["Leagues"],
+        summary: "Tabela ligi + punkty z 5 ostatnich kolejek (wyszukiwanie po nicku)",
+        parameters: [idParam(), ...pageParams, { name: "q", in: "query", schema: { type: "string" } }],
+        responses: {
+          200: ok("OK", {
+            allOf: [
+              page(ref("LeaderboardEntry")),
+              {
+                type: "object",
+                properties: {
+                  rounds: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: { competitionId: { type: "integer" }, competitionName: { type: "string" }, stage: { type: "string" } },
+                    },
+                  },
+                },
+              },
+            ],
+          }),
+          ...errors(403, 404),
+        },
+      },
+    },
+    "/api/leagues/{leagueId}/rounds": {
+      get: {
+        tags: ["Predictions"],
+        summary: "Kolejki ligi pogrupowane po rozgrywkach + bieżąca kolejka (pierwsza z nierozstrzygniętymi meczami)",
+        parameters: [idParam("leagueId")],
+        responses: {
+          200: ok("OK", {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                competition: { type: "object", properties: { id: { type: "integer" }, name: { type: "string" } } },
+                currentStage: { type: "string" },
+                rounds: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      stage: { type: "string", example: "Faza ligowa, 5. kolejka" },
+                      startsAt: { type: "string", format: "date-time" },
+                      endsAt: { type: "string", format: "date-time" },
+                      matches: { type: "integer" },
+                      settled: { type: "integer" },
+                    },
+                  },
+                },
+              },
+            },
+          }),
+          ...errors(403),
+        },
+      },
     },
     "/api/leagues/{leagueId}/fixtures": {
       get: {
         tags: ["Predictions"],
-        summary: "Terminarz ligi z moimi typami",
+        summary: "Terminarz ligi z moimi typami (zwykle jedna kolejka: competitionId + stage)",
         parameters: [
           idParam("leagueId"),
           ...pageParams,
+          { name: "competitionId", in: "query", schema: { type: "integer" } },
+          { name: "stage", in: "query", schema: { type: "string" }, description: "nazwa kolejki z /rounds; '-' = mecze bez etapu" },
           { name: "status", in: "query", schema: { type: "string" } },
           { name: "from", in: "query", schema: { type: "string", format: "date-time" } },
           { name: "to", in: "query", schema: { type: "string", format: "date-time" } },
@@ -355,6 +460,39 @@ module.exports = {
         summary: "Typy członków na mecz (cudze widać dopiero po rozpoczęciu)",
         parameters: [idParam("leagueId"), idParam("matchId")],
         responses: { 200: ok("OK", { type: "array", items: ref("Prediction") }), ...errors(403, 404) },
+      },
+    },
+    "/api/sync": {
+      post: {
+        tags: ["Sync"],
+        summary: "Ręczna synchronizacja meczów i wyników z football-data.org" + adminOnly,
+        responses: {
+          200: ok("Wynik synchronizacji dla każdych rozgrywek", {
+            type: "object",
+            properties: {
+              results: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    competition: { type: "string" },
+                    matches: { type: "integer" },
+                    newlyFinished: { type: "integer" },
+                    error: { type: "string" },
+                  },
+                },
+              },
+            },
+          }),
+          ...errors(403, 409),
+        },
+      },
+    },
+    "/api/sync/status": {
+      get: {
+        tags: ["Sync"],
+        summary: "Stan synchronizacji: czy włączona, kiedy ostatnio i z jakim wynikiem" + adminOnly,
+        responses: { 200: ok("OK"), ...errors(403) },
       },
     },
     "/api/leagues/{leagueId}/predictions/copy": {
