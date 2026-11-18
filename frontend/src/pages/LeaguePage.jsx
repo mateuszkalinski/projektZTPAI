@@ -4,7 +4,6 @@ import { api } from '../api/client.js'
 import { useAuth } from '../auth/AuthContext.jsx'
 import ErrorMessage from '../components/ErrorMessage.jsx'
 
-const dateTime = new Intl.DateTimeFormat('pl-PL', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 const dayMonth = new Intl.DateTimeFormat('pl-PL', { day: 'numeric', month: 'short' })
 
 const NO_STAGE = '-'
@@ -28,6 +27,7 @@ function pickDefault(groups) {
 
 export default function LeaguePage() {
   const { leagueId } = useParams()
+  const { user } = useAuth()
   const [league, setLeague] = useState(null)
   const [groups, setGroups] = useState(null) // kolejki pogrupowane po rozgrywkach
   const [selected, setSelected] = useState(null) // { competitionId, stage }
@@ -97,30 +97,33 @@ export default function LeaguePage() {
 
   return (
     <div className="stack">
-      <div>
+      <header className="frame page-head">
         <h1>{league.name}</h1>
         {league.description && <p>{league.description}</p>}
-        <p className="muted">
-          <span className="badge">{league.isPublic ? 'publiczna' : 'prywatna'}</span>{' '}
-          {league.competitions.map((c) => c.name).join(', ')} · {league.memberCount} os.
-          {league.inviteCode && <> · kod zaproszenia: <code>{league.inviteCode}</code></>}
-        </p>
-      </div>
+        <div className="page-meta">
+          <span>Liga <strong>{league.isPublic ? 'publiczna' : 'prywatna'}</strong></span>
+          <span>Rozgrywki: <strong>{league.competitions.map((c) => c.name).join(', ')}</strong></span>
+          <span>Graczy: <strong>{league.memberCount}</strong></span>
+          {league.inviteCode && <span>Kod zaproszenia: <code>{league.inviteCode}</code></span>}
+        </div>
+      </header>
 
-      <CopyPredictions leagues={copySources} onCopy={copyFrom} />
       {info && <p className="success">{info}</p>}
       <ErrorMessage error={error} />
 
-      <div className="grid2 wide-left">
-        <section className="card stack">
-          <h2>Terminarz</h2>
+      <div className="columns">
+        <section className="stack">
+          <div className="band red">
+            <h2>Kupon</h2>
+            <CopyPredictions leagues={copySources} onCopy={copyFrom} />
+          </div>
 
           {groups === null ? (
             <p>Ładowanie…</p>
           ) : groups.length === 0 ? (
-            <p className="muted">Brak meczów w rozgrywkach tej ligi.</p>
+            <p className="muted">W rozgrywkach tej ligi nie ma jeszcze meczów.</p>
           ) : (
-            <>
+            <div className="stack">
               {groups.length > 1 && (
                 <div className="tabs" role="tablist">
                   {groups.map((g) => (
@@ -148,40 +151,42 @@ export default function LeaguePage() {
               {fixtures === null ? (
                 <p>Ładowanie…</p>
               ) : (
-                <ul className="list">
-                  {fixtures.content.map((f) => (
-                    <FixtureRow key={f.match.id} leagueId={leagueId} fixture={f} onSaved={loadFixtures} />
+                <ol className="coupon">
+                  {fixtures.content.map((f, i) => (
+                    <FixtureRow key={f.match.id} number={i + 1} leagueId={leagueId} fixture={f} onSaved={loadFixtures} />
                   ))}
-                </ul>
+                </ol>
               )}
-            </>
+            </div>
           )}
         </section>
 
-        <div className="stack">
-          <section className="card stack">
-            <h2>Tabela</h2>
+        <aside className="stack">
+          <section className="stack">
+            <div className="band">
+              <h2>Tabela</h2>
+              <Link to={`/leagues/${leagueId}/table`} className="small">
+                {league.memberCount > 10 ? `Pełna tabela (${league.memberCount})` : 'Pełna tabela'}
+              </Link>
+            </div>
             <table>
               <thead>
-                <tr><th>#</th><th>Gracz</th><th>Pkt</th></tr>
+                <tr><th>Miejsce</th><th>Gracz</th><th className="pts">Pkt</th></tr>
               </thead>
               <tbody>
                 {leaderboard.map((row) => (
-                  <tr key={row.userId}>
-                    <td>{row.position}</td>
-                    <td>{row.username}</td>
-                    <td>{row.points}</td>
+                  <tr key={row.userId} className={row.userId === user?.id ? 'me' : undefined}>
+                    <td className="pos"><span className="box-num">{row.position}</span></td>
+                    <td className="player">{row.username}</td>
+                    <td className="pts">{row.points}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <Link to={`/leagues/${leagueId}/table`} className="small">
-              {league.memberCount > 10 ? `Pełna tabela (${league.memberCount} graczy) ›` : 'Pełna tabela ›'}
-            </Link>
           </section>
 
           <LeagueActions league={league} onUpdated={setLeague} />
-        </div>
+        </aside>
       </div>
     </div>
   )
@@ -228,8 +233,8 @@ function LeagueActions({ league, onUpdated }) {
   if (!canLeave && !canDelete) return null
 
   return (
-    <section className="card stack">
-      <h2>Liga</h2>
+    <section className="stack">
+      <div className="band teal"><h2>Liga</h2></div>
       {editing ? (
         <EditLeagueForm
           league={league}
@@ -243,8 +248,8 @@ function LeagueActions({ league, onUpdated }) {
         <>
           {isOwner && (
             <p className="muted small">
-              Jesteś założycielem tej ligi, więc nie możesz z niej wyjść – możesz ją przekazać innemu
-              graczowi (w pełnej tabeli) albo usunąć.
+              Jako założyciel nie możesz wyjść z ligi. Możesz ją przekazać innemu graczowi
+              w pełnej tabeli albo usunąć.
             </p>
           )}
           <div className="inline">
@@ -328,7 +333,7 @@ function RoundPicker({ group, stage, onChange }) {
       <select value={stage} onChange={(e) => onChange(e.target.value)} aria-label="Kolejka">
         {group.rounds.map((r) => (
           <option key={r.stage} value={r.stage}>
-            {stageName(r.stage)} ({roundDates(r)}){r.stage === group.currentStage ? ' • bieżąca' : ''}
+            {stageName(r.stage)}, {roundDates(r)}{r.stage === group.currentStage ? ' (bieżąca)' : ''}
           </option>
         ))}
       </select>
@@ -337,33 +342,33 @@ function RoundPicker({ group, stage, onChange }) {
   )
 }
 
-/** "Skopiuj moje typy z ligi…" – przycisk z nazwą, gdy jest jedna pasująca liga, lista, gdy jest ich więcej */
+/** "Skopiuj typy z ligi…" – przycisk z nazwą, gdy pasuje jedna liga, lista, gdy więcej */
 function CopyPredictions({ leagues, onCopy }) {
   const [selected, setSelected] = useState('')
   if (leagues.length === 0) return null
 
   if (leagues.length === 1) {
     return (
-      <div>
-        <button className="secondary" onClick={() => onCopy(leagues[0].id)}>
-          Skopiuj moje typy z ligi „{leagues[0].name}”
-        </button>
-      </div>
+      <button className="link small" onClick={() => onCopy(leagues[0].id)}>
+        Skopiuj typy z ligi „{leagues[0].name}”
+      </button>
     )
   }
   return (
-    <div className="inline">
-      <span>Skopiuj moje typy z ligi:</span>
-      <select value={selected} onChange={(e) => setSelected(e.target.value)}>
-        <option value="">— wybierz —</option>
+    <div className="inline small">
+      <select className="small" value={selected} onChange={(e) => setSelected(e.target.value)} aria-label="Skopiuj typy z ligi">
+        <option value="">Skopiuj typy z ligi…</option>
         {leagues.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
       </select>
-      <button className="secondary" disabled={!selected} onClick={() => onCopy(selected)}>Kopiuj</button>
+      <button className="coupon-save" disabled={!selected} onClick={() => onCopy(selected)}>Kopiuj</button>
     </div>
   )
 }
 
-function FixtureRow({ leagueId, fixture, onSaved }) {
+const timeOnly = new Intl.DateTimeFormat('pl-PL', { hour: '2-digit', minute: '2-digit' })
+const dayOnly = new Intl.DateTimeFormat('pl-PL', { weekday: 'short', day: 'numeric', month: 'short' })
+
+function FixtureRow({ number, leagueId, fixture, onSaved }) {
   const { match, myPrediction, canPredict } = fixture
   const [home, setHome] = useState(myPrediction?.homeScore ?? '')
   const [away, setAway] = useState(myPrediction?.awayScore ?? '')
@@ -392,40 +397,70 @@ function FixtureRow({ leagueId, fixture, onSaved }) {
     }
   }
 
+  const kickoff = new Date(match.kickoffAt)
   const finished = match.status === 'FINISHED'
-  const statusNote = { POSTPONED: 'przełożony', CANCELLED: 'odwołany' }[match.status]
+  const statusNote = { POSTPONED: 'Mecz przełożony', CANCELLED: 'Mecz odwołany' }[match.status]
+  const live = !finished && !statusNote && match.started
+  const unchanged =
+    myPrediction && String(myPrediction.homeScore) === String(home) && String(myPrediction.awayScore) === String(away)
+  const filled = home !== '' && away !== ''
+  const formId = `typ-${match.id}`
 
   return (
-    <li className="fixture">
-      <div className="muted small">
-        {dateTime.format(new Date(match.kickoffAt))}
-        {statusNote && <> · <strong>{statusNote}</strong></>}
-        {!finished && !statusNote && match.started && <> · <strong>trwa</strong></>}
+    <li className="coupon-row">
+      <div className="coupon-meta">
+        <span className="box-num" aria-hidden="true">{number}</span>
+        <div className="coupon-time">
+          <strong>{timeOnly.format(kickoff)}</strong>
+          <span>{dayOnly.format(kickoff)}</span>
+        </div>
       </div>
-      <div className="teams">
-        <span>{match.homeTeam.name}</span>
-        <strong>{finished ? `${match.homeScore} : ${match.awayScore}` : 'vs'}</strong>
-        <span>{match.awayTeam.name}</span>
+      <span className="coupon-team home">{match.homeTeam.name}</span>
+
+      <div className="coupon-middle">
+        {canPredict ? (
+          <form id={formId} className="coupon-middle" onSubmit={save}>
+            <input type="number" min={0} max={30} value={home} required className="score" inputMode="numeric"
+                   onChange={(e) => setHome(e.target.value)} aria-label={`Gole: ${match.homeTeam.name}`} />
+            <span className="sep">:</span>
+            <input type="number" min={0} max={30} value={away} required className="score" inputMode="numeric"
+                   onChange={(e) => setAway(e.target.value)} aria-label={`Gole: ${match.awayTeam.name}`} />
+          </form>
+        ) : finished ? (
+          <span className="coupon-result">{match.homeScore}:{match.awayScore}</span>
+        ) : (
+          <span className="coupon-vs">v</span>
+        )}
       </div>
 
-      {canPredict ? (
-        <form className="inline" onSubmit={save}>
-          <input type="number" min={0} max={30} value={home} required className="score"
-                 onChange={(e) => setHome(e.target.value)} aria-label="Gole gospodarzy" />
-          <span>:</span>
-          <input type="number" min={0} max={30} value={away} required className="score"
-                 onChange={(e) => setAway(e.target.value)} aria-label="Gole gości" />
-          <button disabled={saving}>{myPrediction ? 'Zmień typ' : 'Typuj'}</button>
-        </form>
-      ) : (
-        <div className="small">
-          {myPrediction
-            ? <>Twój typ: {myPrediction.homeScore} : {myPrediction.awayScore}
-                {myPrediction.points !== null && <> · <strong>{myPrediction.points} pkt</strong></>}</>
-            : <span className="muted">Brak typu – typowanie zamknięte</span>}
-        </div>
-      )}
-      <ErrorMessage error={error} />
+      <span className="coupon-team away">{match.awayTeam.name}</span>
+
+      <div className="coupon-foot">
+        {canPredict ? (
+          <>
+            {myPrediction && unchanged && <span className="saved">Typ zapisany</span>}
+            {filled && !unchanged && (
+              <button form={formId} className="coupon-save" disabled={saving}>
+                {myPrediction ? 'Zapisz zmianę' : 'Zapisz typ'}
+              </button>
+            )}
+          </>
+        ) : (
+          <>
+            {live && <span className="live">Trwa</span>}
+            {statusNote && <span className="live">{statusNote}</span>}
+            {myPrediction ? (
+              <span>Twój typ: <strong>{myPrediction.homeScore}:{myPrediction.awayScore}</strong></span>
+            ) : (
+              !statusNote && <span className="muted">Bez typu</span>
+            )}
+            {myPrediction?.points != null && (
+              <span className={myPrediction.points > 0 ? 'stamp' : 'stamp zero'}>+{myPrediction.points}</span>
+            )}
+          </>
+        )}
+        <ErrorMessage error={error} />
+      </div>
     </li>
   )
 }

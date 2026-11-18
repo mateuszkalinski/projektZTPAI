@@ -38,10 +38,10 @@ export default function LeagueTablePage() {
 
   return (
     <div className="stack">
-      <div>
-        <Link to={`/leagues/${leagueId}`} className="small">‹ Wróć do ligi</Link>
-        <h1>{league.name} – tabela</h1>
-      </div>
+      <header className="page-head">
+        <Link to={`/leagues/${leagueId}`} className="back">‹ {league.name}</Link>
+        <h1>Tabela ligi</h1>
+      </header>
 
       {canManage && (
         <div className="tabs" role="tablist">
@@ -114,7 +114,7 @@ function Standings({ league, canManage, onLeagueChanged }) {
     )
 
   return (
-    <section className="card stack">
+    <section className="stack">
       <input type="search" placeholder="Szukaj gracza po nicku…" value={query}
              onChange={(e) => setQuery(e.target.value)} aria-label="Szukaj gracza" />
       {info && <p className="success">{info}</p>}
@@ -129,9 +129,9 @@ function Standings({ league, canManage, onLeagueChanged }) {
           <table>
             <thead>
               <tr>
-                <th>#</th>
+                <th>Miejsce</th>
                 <th>Gracz</th>
-                <th>Pkt</th>
+                <th className="pts">Pkt</th>
                 <th>Dołączył</th>
                 {data.rounds.map((r) => (
                   <th key={`${r.competitionId}|${r.stage}`} className="num" title={`${r.competitionName}: ${r.stage}`}>
@@ -147,12 +147,12 @@ function Standings({ league, canManage, onLeagueChanged }) {
                 const isMe = row.userId === user?.id
                 return (
                   <tr key={row.userId} className={isMe ? 'me' : undefined}>
-                    <td>{row.position}</td>
-                    <td>
+                    <td className="pos"><span className="box-num">{row.position}</span></td>
+                    <td className="player">
                       {row.username}
                       {isOwnerRow && <span className="badge">założyciel</span>}
                     </td>
-                    <td><strong>{row.points}</strong></td>
+                    <td className="pts">{row.points}</td>
                     <td className="muted">{date.format(new Date(row.joinedAt))}</td>
                     {row.roundPoints.map((p, i) => (
                       <td key={i} className="num">{p ?? '–'}</td>
@@ -207,7 +207,7 @@ function Bans({ leagueId }) {
   }
 
   return (
-    <section className="card stack">
+    <section className="stack">
       <ErrorMessage error={error} />
       {bans === null ? (
         <p>Ładowanie…</p>

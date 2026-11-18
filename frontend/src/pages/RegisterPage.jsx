@@ -27,7 +27,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <section className="card narrow">
+    <section className="frame narrow stack">
       <h1>Załóż konto</h1>
       <form onSubmit={onSubmit} className="stack">
         <label>

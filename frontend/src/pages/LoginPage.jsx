@@ -26,7 +26,7 @@ export default function LoginPage() {
   }
 
   return (
-    <section className="card narrow">
+    <section className="frame narrow stack">
       <h1>Logowanie</h1>
       <form onSubmit={onSubmit} className="stack">
         <label>

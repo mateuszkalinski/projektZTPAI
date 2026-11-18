@@ -60,14 +60,14 @@ export default function LeaguesPage() {
       ) : leagues.length === 0 ? (
         <p className="muted">Nie należysz jeszcze do żadnej ligi. Załóż własną, dołącz kodem od znajomego albo wybierz ligę publiczną.</p>
       ) : (
-        <ul className="list">
+        <ul className="league-list">
           {leagues.map((l) => (
             <li key={l.id}>
-              <Link to={`/leagues/${l.id}`}><strong>{l.name}</strong></Link>
-              <span className="muted">
-                {l.competitions.map((c) => c.name).join(', ')} · {l.memberCount} os.
-                {l.isPublic ? ' · publiczna' : ''}
-                {l.myRole === 'OWNER' ? ' · założyciel' : ''}
+              <Link to={`/leagues/${l.id}`}>{l.name}</Link>
+              <span className="details">
+                {l.competitions.map((c) => c.name).join(', ')}, graczy: {l.memberCount}
+                {l.myRole === 'OWNER' && <span className="badge">założyciel</span>}
+                {l.isPublic && <span className="badge">publiczna</span>}
               </span>
             </li>
           ))}
@@ -76,9 +76,9 @@ export default function LeaguesPage() {
 
       <PublicLeagues />
 
-      <div className="grid2">
-        <form className="card stack" onSubmit={createLeague}>
-          <h2>Nowa liga</h2>
+      <div className="split">
+        <form className="frame stack" onSubmit={createLeague}>
+          <h2>Załóż ligę</h2>
           <label>
             Nazwa
             <input value={newLeague.name} required maxLength={100}
@@ -116,8 +116,9 @@ export default function LeaguesPage() {
           <button>Załóż ligę</button>
         </form>
 
-        <form className="card stack" onSubmit={joinLeague}>
+        <form className="frame teal stack" onSubmit={joinLeague}>
           <h2>Dołącz kodem</h2>
+          <p className="muted small">Kod dostaniesz od założyciela ligi prywatnej.</p>
           <label>
             Kod zaproszenia
             <input value={inviteCode} required maxLength={12} placeholder="np. K7M2QX9A"
@@ -170,8 +171,11 @@ function PublicLeagues() {
   if (data && data.totalElements === 0 && !search) return null
 
   return (
-    <section className="card stack">
-      <h2>Ligi publiczne</h2>
+    <section className="stack">
+      <div className="band teal">
+        <h2>Ligi publiczne</h2>
+        <span className="small">od największych</span>
+      </div>
       {expanded && (
         <input type="search" placeholder="Szukaj ligi po nazwie…" value={query}
                onChange={(e) => setQuery(e.target.value)} aria-label="Szukaj ligi" />
@@ -190,7 +194,7 @@ function PublicLeagues() {
           <tbody>
             {data.content.map((l) => (
               <tr key={l.id}>
-                <td><strong>{l.name}</strong></td>
+                <td>{l.name}</td>
                 <td className="muted">{l.competitions.map((c) => c.name).join(', ')}</td>
                 <td className="num">{l.memberCount}</td>
                 <td className="actions">

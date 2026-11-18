@@ -1,84 +1,267 @@
-/* Celowo neutralny styl roboczy – właściwy wygląd ustalimy później */
+/*
+ * Pogwizdek – angielski program meczowy z lat 70. + winieta starej polskiej gazety.
+ * Papier programu, druk w kilku kolorach, każdy z jedną rolą:
+ *   czerwień  – główne akcje, ramki najważniejszych bloków, punkty
+ *   musztarda – wyróżnienia (mój wiersz, zapisany typ)
+ *   turkus    – linki i informacje
+ *   czerń     – tekst, linie, numery
+ * Krój: Archivo – wąski i ciężki w nagłówkach (jak „IPSWICH v LIVERPOOL”), zwykły w tekście.
+ */
 :root {
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  line-height: 1.45;
-  color: #1d1d1f;
-  background: #f5f5f7;
-  --border: #d9d9de;
-  --muted: #6b6b73;
-  --accent: #2456d6;
+  --paper: #f1ead8;
+  --sheet: #fbf7ec;
+  --ink: #1c1a17;
+  --ink-soft: #5d574c;
+  --rule: #d6ccb4;
+  --red: #d3291f;
+  --red-dark: #a81d15;
+  --yellow: #f2c230;
+  --yellow-soft: #f8e7a6;
+  --teal: #0f6f72;
+
+  --sans: 'Archivo', 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+
+  font-family: var(--sans);
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--paper);
+  font-variant-numeric: tabular-nums lining-nums;
+  -webkit-font-smoothing: antialiased;
 }
 
-* { box-sizing: border-box; }
+*, *::before, *::after { box-sizing: border-box; }
 body { margin: 0; }
-h1, h2 { margin: 0 0 .5rem; }
-code { background: #ececf0; padding: .1rem .35rem; border-radius: 4px; }
+img, svg { display: block; }
+p { margin: 0; }
 
+/* krój „programowy”: wąski, ciężki, wersalikami */
+.condensed, h1, h2, h3 {
+  font-family: var(--sans); font-stretch: 62%; font-weight: 800;
+  text-transform: uppercase; letter-spacing: .01em; line-height: 1.02; margin: 0;
+}
+h1 { font-size: clamp(2.1rem, 5vw, 3.1rem); }
+h2 { font-size: 1.55rem; font-weight: 750; }
+
+a { color: var(--teal); text-underline-offset: .18em; }
+a:hover { color: var(--red); }
+code { font-family: var(--sans); font-stretch: 75%; font-weight: 700; letter-spacing: .14em; font-size: 1.05em; }
+.muted { color: var(--ink-soft); }
+.small { font-size: .85rem; }
+:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+
+/* ---------- pasek konta ---------- */
 .topbar {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: .75rem 1.5rem; background: #fff; border-bottom: 1px solid var(--border);
+  display: flex; justify-content: flex-end; gap: 1.1rem; align-items: center; flex-wrap: wrap;
+  max-width: 1120px; margin: 0 auto; padding: .5rem 1.25rem 0; font-size: .88rem;
 }
-.topbar nav { display: flex; gap: 1rem; align-items: center; }
-.brand { font-weight: 700; font-size: 1.2rem; text-decoration: none; color: inherit; }
-.content { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
-.footer { text-align: center; padding: 1.5rem; }
+.topbar a { color: var(--ink); text-decoration: none; }
+.topbar a.active, .topbar a:hover { color: var(--red); }
+.topbar .who { color: var(--ink-soft); }
 
-.card { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; }
-.narrow { max-width: 420px; margin: 2rem auto; }
-.stack { display: flex; flex-direction: column; gap: 1rem; }
-.inline { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
-.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-.grid2.wide-left { grid-template-columns: 2fr 1fr; }
-@media (max-width: 760px) { .grid2, .grid2.wide-left { grid-template-columns: 1fr; } }
+/* ---------- winieta jak w „Kuryerze” ---------- */
+.masthead { max-width: 1120px; margin: 0 auto; padding: .5rem 1.25rem 0; }
+.masthead-row { display: grid; grid-template-columns: 9.5rem 1fr 9.5rem; align-items: center; gap: 1rem; }
+.ear {
+  border: 2px solid var(--ink); padding: .4rem .55rem; font-size: .8rem; line-height: 1.2; text-align: center;
+  background: var(--sheet);
+}
+.ear strong { display: block; font-stretch: 62%; font-weight: 800; font-size: 1.9rem; line-height: 1; color: var(--red); }
+.ear-roundel { justify-self: end; width: 5.6rem; height: 5.6rem; border-radius: 50%; background: var(--red); display: grid; place-items: center; }
+.ear-roundel svg { width: 3.4rem; color: var(--paper); transform: rotate(-14deg); --whistle-hole: var(--red); }
+.flag { text-align: center; color: var(--ink); text-decoration: none; display: block; }
+.flag:hover { color: var(--ink); }
+.flag-kicker { display: block; font-stretch: 62%; font-weight: 800; text-transform: uppercase; letter-spacing: .3em; font-size: clamp(.8rem, 1.6vw, 1.05rem); color: var(--red); }
+.flag-name { display: block; font-stretch: 62%; font-weight: 900; text-transform: uppercase; line-height: .9; font-size: clamp(3.2rem, 11vw, 6.6rem); letter-spacing: .02em; }
+.dateline {
+  display: flex; justify-content: space-between; gap: 1rem; margin-top: .6rem; padding: .3rem 0;
+  border-top: 4px solid var(--ink); border-bottom: 1.5px solid var(--ink);
+  font-stretch: 75%; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; font-size: .9rem;
+}
+@media (max-width: 640px) {
+  .masthead-row { grid-template-columns: 1fr; }
+  .ear, .ear-roundel { display: none; }
+  .dateline span:first-child { display: none; }
+}
 
-label { display: flex; flex-direction: column; gap: .25rem; font-size: .9rem; }
-label.inline { flex-direction: row; }
-fieldset { border: 1px solid var(--border); border-radius: 8px; }
-input, select { font: inherit; padding: .45rem .6rem; border: 1px solid var(--border); border-radius: 6px; }
-input.score { width: 4rem; text-align: center; }
+/* ---------- układ ---------- */
+.content { max-width: 1120px; margin: 0 auto; padding: 1.75rem 1.25rem 3rem; }
+.stack { display: flex; flex-direction: column; gap: 1.25rem; }
+.inline { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; }
+.columns { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); gap: 2rem; align-items: start; }
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start; }
+@media (max-width: 860px) {
+  .columns, .split { grid-template-columns: minmax(0, 1fr); }
+}
 
-button {
-  font: inherit; padding: .45rem .9rem; border-radius: 6px; cursor: pointer;
-  border: 1px solid var(--accent); background: var(--accent); color: #fff;
+/* blok w grubej ramce – jak „Next home game” w programie */
+.frame { border: 6px solid var(--red); background: var(--sheet); padding: 1.1rem 1.25rem; }
+.frame.teal { border-color: var(--teal); }
+.frame.ink { border-color: var(--ink); border-width: 3px; }
+
+/* nagłówek działu: kolorowy pasek z napisem jak w programie */
+.band {
+  display: flex; justify-content: space-between; align-items: center; gap: .75rem; flex-wrap: wrap;
+  background: var(--ink); color: var(--paper); padding: .35rem .75rem;
 }
-button.secondary { background: #fff; color: var(--accent); }
-button.danger { background: #fff; color: #b3261e; border-color: #b3261e; }
-button.link.danger-text { color: #b3261e; }
-a.button {
-  display: inline-block; padding: .45rem .9rem; border-radius: 6px; text-decoration: none;
-  border: 1px solid var(--accent); background: #fff; color: var(--accent);
+.band h2 { font-size: 1.35rem; color: var(--paper); }
+.band.red { background: var(--red); }
+.band.teal { background: var(--teal); }
+.band a, .band .link { color: var(--paper); }
+.band a:hover, .band .link:hover { color: var(--yellow); }
+
+.page-head { display: flex; flex-direction: column; gap: .45rem; }
+.page-meta { display: flex; flex-wrap: wrap; gap: .2rem 1.5rem; color: var(--ink-soft); font-size: .92rem; }
+.page-meta strong { color: var(--ink); font-weight: 600; }
+.back { font-size: .9rem; }
+
+.sheet { background: var(--sheet); border: 2px solid var(--ink); padding: 1.25rem; }
+.narrow { max-width: 440px; margin: 1rem auto; width: 100%; }
+
+/* ---------- formularze ---------- */
+label { display: flex; flex-direction: column; gap: .3rem; font-size: .92rem; font-weight: 600; }
+label.inline { flex-direction: row; align-items: center; font-weight: 400; }
+fieldset { border: 2px solid var(--rule); padding: .6rem .9rem .8rem; margin: 0; display: flex; flex-direction: column; gap: .35rem; }
+legend { font-weight: 600; padding: 0 .3rem; font-size: .92rem; }
+input, select {
+  font: inherit; font-size: 1rem; font-weight: 400; color: var(--ink);
+  padding: .5rem .65rem; background: #fff; border: 2px solid var(--ink); border-radius: 0;
 }
-.badge {
-  display: inline-block; margin-left: .4rem; padding: 0 .4rem; border-radius: 4px;
-  font-size: .75rem; background: #ececf0; color: var(--muted); vertical-align: middle;
-}
-.badge:first-child { margin-left: 0; }
-.table-scroll { overflow-x: auto; }
-td.num, th.num { text-align: center; }
-td.actions { text-align: right; white-space: nowrap; }
-td.actions .link + .link { margin-left: .75rem; }
-tr.me td { background: #f3f6ff; }
+input:focus-visible, select:focus-visible { outline: 3px solid var(--yellow); outline-offset: 0; }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--red); width: 1.1rem; height: 1.1rem; }
 input[type="search"] { width: 100%; }
-button.link { border: none; background: none; color: var(--accent); padding: 0; }
-button:disabled { opacity: .5; cursor: default; }
 
-.list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: .5rem; }
-.list > li { display: flex; flex-direction: column; gap: .25rem; padding: .6rem 0; border-bottom: 1px solid var(--border); }
-.fixture .teams { display: grid; grid-template-columns: 1fr auto 1fr; gap: .75rem; align-items: center; }
-.fixture .teams span:last-child { text-align: right; }
+/* ---------- przyciski ---------- */
+button, a.button {
+  font: inherit; font-stretch: 75%; font-weight: 700; font-size: 1rem; line-height: 1.15; letter-spacing: .03em;
+  text-transform: uppercase; text-decoration: none; display: inline-block; cursor: pointer;
+  padding: .55rem 1rem; border-radius: 0; color: #fff; background: var(--red); border: 2px solid var(--red);
+}
+button:hover, a.button:hover { background: var(--red-dark); border-color: var(--red-dark); color: #fff; }
+button.secondary, a.button.secondary { background: transparent; color: var(--ink); border-color: var(--ink); }
+button.secondary:hover, a.button.secondary:hover { background: var(--ink); color: var(--paper); }
+button.danger { background: transparent; color: var(--red); border-color: var(--red); }
+button.danger:hover { background: var(--red); color: #fff; }
+button.link {
+  background: none; border: none; padding: 0; color: var(--teal); text-transform: none; letter-spacing: 0;
+  font-stretch: 100%; font-weight: 400; text-decoration: underline; text-underline-offset: .18em;
+}
+button.link:hover { background: none; color: var(--red); }
+button.link.danger-text { color: var(--red); }
+button:disabled { opacity: .4; cursor: default; }
+button:disabled:hover { background: var(--red); border-color: var(--red); }
+button.secondary:disabled:hover { background: transparent; color: var(--ink); }
 
+/* ---------- komunikaty ---------- */
+.error { color: var(--red-dark); background: #f8dcd6; border-left: 6px solid var(--red); padding: .45rem .75rem; }
+.error ul { margin: .25rem 0 0; padding-left: 1.1rem; }
+.success { background: var(--yellow-soft); border-left: 6px solid var(--yellow); padding: .45rem .75rem; }
+.badge { display: inline-block; margin-left: .4rem; padding: 0 .35rem; font-size: .75rem; font-weight: 600; line-height: 1.6; background: var(--yellow); color: var(--ink); vertical-align: .12em; }
+
+/* ---------- moje ligi ---------- */
+.league-list { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ink); }
+.league-list li { display: flex; justify-content: space-between; align-items: baseline; gap: .4rem 1rem; flex-wrap: wrap; padding: .65rem 0; border-bottom: 1px solid var(--rule); }
+.league-list a { font-stretch: 62%; font-weight: 800; text-transform: uppercase; font-size: 1.45rem; line-height: 1.1; color: var(--ink); text-decoration: none; }
+.league-list a:hover { color: var(--red); }
+.league-list .details { color: var(--ink-soft); font-size: .9rem; }
+
+/* ---------- tabele: jak skład w programie ---------- */
 table { width: 100%; border-collapse: collapse; }
-th, td { text-align: left; padding: .35rem .25rem; border-bottom: 1px solid var(--border); }
+th { text-align: left; font-weight: 600; font-size: .8rem; color: var(--ink-soft); padding: .35rem .4rem; border-bottom: 2px solid var(--ink); }
+td { padding: .4rem .4rem; border-bottom: 1px solid var(--rule); }
+td.num, th.num { text-align: center; }
+td.pts, th.pts { text-align: right; }
+td.pts { font-stretch: 62%; font-weight: 800; font-size: 1.3rem; line-height: 1; }
+td.pos { width: 2.6rem; }
+td.actions { text-align: right; white-space: nowrap; }
+td.actions .link + .link { margin-left: .9rem; }
+tr.me td { background: var(--yellow-soft); }
+.table-scroll { overflow-x: auto; }
+.player { font-weight: 600; }
 
-.tabs { display: flex; gap: .25rem; border-bottom: 1px solid var(--border); }
-.tab { background: none; color: var(--muted); border: none; border-bottom: 2px solid transparent; border-radius: 0; }
-.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-.round-picker { display: flex; gap: .5rem; align-items: center; }
-.round-picker select { flex: 1; }
+/* numer w kwadracie – jak numer zawodnika w składzie */
+.box-num {
+  display: inline-grid; place-items: center; min-width: 1.85rem; height: 1.85rem; padding: 0 .2rem;
+  border: 2px solid var(--ink); font-stretch: 75%; font-weight: 700; font-size: .95rem; line-height: 1; background: var(--sheet);
+}
+tr.me .box-num { background: var(--yellow); }
+
+/* ---------- kupon ---------- */
+.round-picker { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .5rem; align-items: center; }
+.round-picker select { width: 100%; min-width: 0; font-stretch: 75%; font-weight: 700; font-size: 1.05rem; text-transform: uppercase; letter-spacing: .02em; }
+.round-picker button { padding: .5rem .85rem; }
+
+.tabs { display: flex; gap: .4rem; flex-wrap: wrap; }
+.tab {
+  background: var(--sheet); color: var(--ink); border: 2px solid var(--ink); padding: .35rem .8rem;
+  font-stretch: 75%; font-weight: 700; text-transform: uppercase;
+}
+.tab:hover { background: var(--yellow-soft); color: var(--ink); border-color: var(--ink); }
+.tab.active { background: var(--ink); color: var(--paper); }
+
+.coupon { list-style: none; margin: 0; padding: 0; background: var(--sheet); border: 6px solid var(--red); }
+.coupon-row {
+  display: grid; grid-template-columns: 7.6rem minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: .2rem .8rem; align-items: center; padding: .7rem .9rem; border-bottom: 1px solid var(--rule);
+}
+.coupon-row:last-child { border-bottom: none; }
+.coupon-meta { display: flex; align-items: center; gap: .6rem; }
+.coupon-time { font-size: .78rem; line-height: 1.2; color: var(--ink-soft); white-space: nowrap; }
+.coupon-time strong { display: block; color: var(--ink); font-size: .98rem; font-weight: 700; }
+.coupon-team { font-stretch: 62%; font-weight: 800; text-transform: uppercase; font-size: 1.22rem; line-height: 1.05; }
+.coupon-team.home { text-align: right; }
+.coupon-middle { display: flex; align-items: center; justify-content: center; gap: .35rem; min-width: 7.6rem; }
+.coupon-result { font-stretch: 62%; font-weight: 900; font-size: 1.9rem; line-height: 1; }
+.coupon-vs { font-weight: 600; color: var(--red); font-size: 1.05rem; }
+.coupon-middle .sep { font-weight: 700; color: var(--red); }
+.coupon-foot { grid-column: 2 / -1; display: flex; justify-content: center; align-items: center; gap: .7rem; flex-wrap: wrap; font-size: .88rem; }
+.coupon-foot:empty { display: none; }
+.coupon-foot .error { width: 100%; }
+.saved { background: var(--yellow-soft); padding: 0 .4rem; }
+
+/* pole do wpisania wyniku – kropkowana linia jak „For the record” */
+.score {
+  width: 2.7rem; height: 2.5rem; padding: 0; text-align: center;
+  font-stretch: 62%; font-weight: 800; font-size: 1.6rem; line-height: 1;
+  background: transparent; border: none; border-bottom: 3px dotted var(--ink); -moz-appearance: textfield;
+}
+.score:focus-visible { outline: none; background: var(--yellow-soft); border-bottom-style: solid; border-bottom-color: var(--red); }
+.score::-webkit-outer-spin-button, .score::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.coupon-save { padding: .3rem .75rem; font-size: .85rem; }
+
+.live { color: var(--red); font-weight: 700; }
+.live::before { content: ''; display: inline-block; width: .55em; height: .55em; margin-right: .3em; background: var(--red); border-radius: 50%; vertical-align: .08em; }
+@media (prefers-reduced-motion: no-preference) {
+  .live::before { animation: blink 1.6s ease-in-out infinite; }
+}
+@keyframes blink { 50% { opacity: .2; } }
+
+/* punkty – czerwony krążek jak wielkie koło z programu */
+.stamp {
+  display: inline-grid; place-items: center; width: 2.3rem; height: 2.3rem; border-radius: 50%;
+  background: var(--red); color: #fff; font-stretch: 62%; font-weight: 800; font-size: 1.05rem; line-height: 1;
+}
+.stamp.zero { background: transparent; color: var(--ink-soft); border: 2px solid var(--rule); }
 
 .pager { display: flex; gap: 1rem; align-items: center; justify-content: center; margin-top: 1rem; }
-.muted { color: var(--muted); }
-.small { font-size: .85rem; }
-.error { color: #b3261e; background: #fdecea; border-radius: 6px; padding: .5rem .75rem; }
-.error p, .error ul { margin: 0; }
-.success { color: #1e7b34; }
+
+.footer {
+  max-width: 1120px; margin: 0 auto; padding: .8rem 1.25rem 2rem; text-align: center;
+  font-size: .78rem; color: var(--ink-soft); border-top: 4px solid var(--ink);
+}
+.footer a { color: var(--ink-soft); }
+
+@media (max-width: 560px) {
+  body { font-size: 16px; }
+  .coupon-row { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); padding: .6rem .6rem .7rem; gap: .35rem .5rem; }
+  .coupon-meta { grid-column: 1 / -1; }
+  .coupon-time { display: flex; gap: .4rem; align-items: baseline; }
+  .coupon-time strong { display: inline; }
+  .coupon-foot { grid-column: 1 / -1; }
+  .coupon-team { font-size: 1.02rem; overflow-wrap: break-word; }
+  .coupon-middle { min-width: 5.6rem; gap: .2rem; }
+  .score { width: 2.2rem; font-size: 1.4rem; }
+  .coupon-result { font-size: 1.6rem; }
+  .frame { border-width: 4px; padding: .9rem; }
+  .coupon { border-width: 4px; }
+}
