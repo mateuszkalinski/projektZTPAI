@@ -29,6 +29,8 @@ const { createFootballDataClient } = require("./modules/sync/footballData.client
 const { createSyncRepository } = require("./modules/sync/sync.repository");
 const { createSyncService } = require("./modules/sync/sync.service");
 const { createSyncRouter } = require("./modules/sync/sync.routes");
+const { createTestDataService } = require("./modules/testdata/testdata.service");
+const { createTestDataRouter } = require("./modules/testdata/testdata.routes");
 
 /**
  * Składa aplikację: repository -> service -> router. Nie uruchamia serwera (to robi server.js),
@@ -63,6 +65,7 @@ function createApp({ pool, config, now = () => new Date(), events = createEventB
     competitionCodes: config.footballData.competitions,
     logger,
   });
+  const testDataService = createTestDataService({ competitionsRepository, matchesRepository, matchesService, now });
 
   // ---------- HTTP ----------
   const app = express();
@@ -89,6 +92,7 @@ function createApp({ pool, config, now = () => new Date(), events = createEventB
   );
 
   app.use("/api/sync", auth, createSyncRouter({ syncService, enabled: Boolean(config.footballData.token) }));
+  app.use("/api/test-data", auth, createTestDataRouter({ testDataService }));
 
   app.use(notFoundHandler);
   app.use(errorHandler(logger));

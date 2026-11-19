@@ -7,6 +7,14 @@ import LeaguesPage from './pages/LeaguesPage.jsx'
 import LeaguePage from './pages/LeaguePage.jsx'
 import LeagueTablePage from './pages/LeagueTablePage.jsx'
 import NotFoundPage from './pages/NotFoundPage.jsx'
+import AdminPage from './pages/AdminPage.jsx'
+import { useAuth } from './auth/AuthContext.jsx'
+
+// panel admina tylko dla roli ADMIN (backend i tak sprawdza rolę)
+function AdminOnly() {
+  const { user } = useAuth()
+  return user?.role === 'ADMIN' ? <AdminPage /> : <NotFoundPage />
+}
 
 export default function App() {
   return (
@@ -19,6 +27,7 @@ export default function App() {
           <Route path="/leagues" element={<LeaguesPage />} />
           <Route path="/leagues/:leagueId" element={<LeaguePage />} />
           <Route path="/leagues/:leagueId/table" element={<LeagueTablePage />} />
+          <Route path="/admin" element={<AdminOnly />} />
         </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Route>

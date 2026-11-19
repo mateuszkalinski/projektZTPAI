@@ -495,6 +495,37 @@ module.exports = {
         responses: { 200: ok("OK"), ...errors(403) },
       },
     },
+    "/api/test-data/round": {
+      post: {
+        tags: ["Test data"],
+        summary: "Liga Warzyw: nowa kolejka testowa z meczami za X minut" + adminOnly,
+        description:
+          "Tworzy (jeśli trzeba) rozgrywki „Liga Warzyw” z 10 drużynami i dodaje kolejkę meczów rozpoczynających się za podaną liczbę minut. " +
+          "Do testów i demo: typujesz, mecz się zaczyna, wpisujesz wynik (PUT /api/matches/{id}/result albo POST /api/test-data/results).",
+        requestBody: {
+          required: false,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  minutes: { type: "integer", minimum: 1, maximum: 1440, default: 3 },
+                  matches: { type: "integer", minimum: 1, maximum: 5, default: 5 },
+                },
+              },
+            },
+          },
+        },
+        responses: { 201: ok("Kolejka utworzona"), ...errors(400, 403) },
+      },
+    },
+    "/api/test-data/results": {
+      post: {
+        tags: ["Test data"],
+        summary: "Liga Warzyw: losowe wyniki dla rozpoczętych meczów" + adminOnly,
+        responses: { 200: ok("Wyniki wpisane, punkty liczą się asynchronicznie"), ...errors(403, 404) },
+      },
+    },
     "/api/leagues/{leagueId}/predictions/copy": {
       post: {
         tags: ["Predictions"],

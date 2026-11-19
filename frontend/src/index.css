@@ -61,27 +61,20 @@ code { font-family: var(--sans); font-stretch: 75%; font-weight: 700; letter-spa
 
 /* ---------- winieta jak w „Kuryerze” ---------- */
 .masthead { max-width: 1120px; margin: 0 auto; padding: .5rem 1.25rem 0; }
-.masthead-row { display: grid; grid-template-columns: 9.5rem 1fr 9.5rem; align-items: center; gap: 1rem; }
-.ear {
-  border: 2px solid var(--ink); padding: .4rem .55rem; font-size: .8rem; line-height: 1.2; text-align: center;
-  background: var(--sheet);
+.masthead-row {
+  display: grid; grid-template-columns: 6rem 1fr 6rem; align-items: center; gap: 1rem;
+  padding-bottom: .6rem; border-bottom: 4px solid var(--ink);
 }
-.ear strong { display: block; font-stretch: 62%; font-weight: 800; font-size: 1.9rem; line-height: 1; color: var(--red); }
 .ear-roundel { justify-self: end; width: 5.6rem; height: 5.6rem; border-radius: 50%; background: var(--red); display: grid; place-items: center; }
 .ear-roundel svg { width: 3.4rem; color: var(--paper); transform: rotate(-14deg); --whistle-hole: var(--red); }
-.flag { text-align: center; color: var(--ink); text-decoration: none; display: block; }
+.flag { grid-column: 2; text-align: center; color: var(--ink); text-decoration: none; display: block; }
 .flag:hover { color: var(--ink); }
 .flag-kicker { display: block; font-stretch: 62%; font-weight: 800; text-transform: uppercase; letter-spacing: .3em; font-size: clamp(.8rem, 1.6vw, 1.05rem); color: var(--red); }
 .flag-name { display: block; font-stretch: 62%; font-weight: 900; text-transform: uppercase; line-height: .9; font-size: clamp(3.2rem, 11vw, 6.6rem); letter-spacing: .02em; }
-.dateline {
-  display: flex; justify-content: space-between; gap: 1rem; margin-top: .6rem; padding: .3rem 0;
-  border-top: 4px solid var(--ink); border-bottom: 1.5px solid var(--ink);
-  font-stretch: 75%; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; font-size: .9rem;
-}
 @media (max-width: 640px) {
   .masthead-row { grid-template-columns: 1fr; }
-  .ear, .ear-roundel { display: none; }
-  .dateline span:first-child { display: none; }
+  .flag { grid-column: 1; }
+  .ear-roundel { display: none; }
 }
 
 /* ---------- układ ---------- */

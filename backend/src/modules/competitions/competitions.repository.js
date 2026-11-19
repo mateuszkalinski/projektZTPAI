@@ -14,6 +14,16 @@ function createCompetitionsRepository(db) {
       return rows[0] ?? null;
     },
 
+    async findCompetitionByCode(code) {
+      const { rows } = await db.query(`SELECT ${COMPETITION} FROM competitions WHERE upper(code) = upper($1)`, [code]);
+      return rows[0] ?? null;
+    },
+
+    async findTeamByName(name) {
+      const { rows } = await db.query(`SELECT ${TEAM} FROM teams WHERE name = $1 ORDER BY id LIMIT 1`, [name]);
+      return rows[0] ?? null;
+    },
+
     async countCompetitions(ids) {
       const { rows } = await db.query("SELECT count(*) AS count FROM competitions WHERE id = ANY($1)", [ids]);
       return rows[0].count;

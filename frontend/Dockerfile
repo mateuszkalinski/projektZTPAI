@@ -2,8 +2,7 @@
 FROM node:22-alpine AS build
 WORKDIR /app
 COPY package*.json ./
-# po pierwszym `npm install` lokalnie commitnij package-lock.json i zamień to na `npm ci`
-RUN npm install
+RUN npm ci
 COPY . .
 RUN npm run build
 

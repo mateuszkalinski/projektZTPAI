@@ -15,7 +15,7 @@ liczby lig), typuje wyniki do momentu rozpoczęcia meczu i zbiera punkty w tabel
 | Logowanie    | JWT (`jsonwebtoken`), hasła hashowane wbudowanym `crypto.scrypt` |
 | Dokumentacja | OpenAPI 3 + Swagger UI (`swagger-ui-express`) |
 | Dane meczowe | zewnętrzne API [football-data.org](https://www.football-data.org) (v4), wbudowany `fetch` |
-| Frontend     | React 19 + Vite, React Router |
+| Frontend     | React 19 + Vite, React Router; wygląd w stylu angielskiego programu meczowego z lat 70. |
 | Testy        | wbudowany runner `node:test` (jednostkowe + integracyjne na prawdziwej bazie) |
 | Uruchomienie | Docker Compose – osobne kontenery: `db`, `backend`, `frontend` |
 
@@ -74,6 +74,20 @@ npm test                   # wszystko
 
 Testy integracyjne zakładają osobną bazę `<POSTGRES_DB>_test` od zera przy każdym uruchomieniu,
 więc nie ruszają danych deweloperskich.
+
+### Testowanie ręczne: Liga Warzyw
+
+Prawdziwe mecze trwają dni, więc do testów i demo jest testowa „Liga Warzyw”
+(Kalafior FC, Marchewka United, Sporting Brokuł…). Reguły są te same co dla prawdziwych meczów.
+
+1. Zaloguj się jako admin w Swaggerze (`/api/docs`): `POST /api/auth/login`, potem **Authorize** z tokenem.
+2. `POST /api/test-data/round` z `{"minutes": 3}` – nowa kolejka 5 meczów startujących za 3 minuty.
+3. W aplikacji załóż ligę z rozgrywkami „Liga Warzyw” i obstaw mecze.
+4. Po 3 minutach typowanie się zamyka. Wpisz wynik ręcznie (`PUT /api/matches/{id}/result`)
+   albo losowo wszystkim rozpoczętym meczom (`POST /api/test-data/results`).
+5. Punkty liczą się w tle – odśwież tabelę ligi.
+
+Liga Warzyw nie jest synchronizowana z football-data.org, więc nic jej nie nadpisze.
 
 ## Główne funkcjonalności
 
@@ -246,9 +260,11 @@ Pełna dokumentacja: Swagger UI pod `/api/docs` (surowy plik: `/api/openapi.json
 | GET | `/api/matches` | mecze z filtrami (stronicowanie) |
 | PUT | `/api/matches/:id/result` | wynik meczu (ADMIN) |
 | POST | `/api/sync` | ręczna synchronizacja z football-data.org (ADMIN) |
+| POST | `/api/test-data/round` | Liga Warzyw: nowa kolejka testowa za X minut (ADMIN) |
+| POST | `/api/test-data/results` | Liga Warzyw: losowe wyniki rozpoczętych meczów (ADMIN) |
 
 ## Plany
 
 - ustalenie docelowej punktacji
-- wygląd frontendu w klimacie retro gazety piłkarskiej, panel admina na frontendzie
+- panel admina na frontendzie (dziś: Swagger UI)
 - CI w GitHub Actions
