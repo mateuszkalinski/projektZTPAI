@@ -5,8 +5,6 @@ Użytkownik zakłada konto, tworzy ligę albo do niej dołącza (może należeć
 typuje wyniki do rozpoczęcia meczu i zbiera punkty w tabeli ligi. Terminarz i wyniki Ligi Mistrzów
 oraz Premier League są pobierane z zewnętrznego API football-data.org.
 
-Projekt zaliczeniowy z przedmiotu *Zaawansowane Technologie Programowania Aplikacji Internetowych*.
-
 ## Demo
 
 [![Demo Pogwizdka na YouTube](https://img.youtube.com/vi/1j3aVz2fF7o/hqdefault.jpg)](https://youtu.be/1j3aVz2fF7o)
