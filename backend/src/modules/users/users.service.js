@@ -24,7 +24,7 @@ function createUsersService({ usersRepository }) {
       return user;
     },
 
-    // Konto admina z ADMIN_* w .env – dzięki temu w repozytorium nie ma żadnego hasła.
+    // Konto admina tworzone z ustawień ADMIN_* (.env).
     async ensureAdmin({ username, email, password }, logger = console) {
       if (!username || !email || !password) return false;
       if (await usersRepository.existsUsername(username)) return false;

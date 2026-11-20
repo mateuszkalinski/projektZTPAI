@@ -1,4 +1,4 @@
-// Tłumaczy dane z football-data.org na nasz model. Czyste funkcje – łatwe do testowania.
+// Mapowanie danych z football-data.org na model aplikacji.
 
 // statusy API -> nasze statusy
 const STATUS = {

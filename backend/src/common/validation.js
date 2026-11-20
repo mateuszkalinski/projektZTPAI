@@ -1,6 +1,6 @@
 const { validationError } = require("./errors");
 
-// Mała, własna walidacja zamiast zewnętrznej biblioteki.
+// Walidacja danych wejściowych.
 // Schemat to obiekt { pole: reguła }, np. { name: { type: "string", required: true, max: 100 } }.
 // Obsługiwane typy: string, email, int, boolean, enum, date, intArray.
 

@@ -14,6 +14,14 @@ function createMatchesService({ matchesRepository: repo, competitionsService, ev
     return match;
   }
 
+  // Reguła biznesowa: mecze z football-data.org zmienia tylko synchronizacja
+  // (ręczna zmiana zostałaby nadpisana, a punkty nie zgadzałyby się z oficjalnym wynikiem).
+  function assertEditable(match) {
+    if (match.synced) {
+      throw conflict("MATCH_SYNCED", "Mecz pochodzi z football-data.org – wynik i dane aktualizuje synchronizacja");
+    }
+  }
+
   // wspólne sprawdzenia dla dodawania i edycji meczu
   async function checkReferences({ competitionId, homeTeamId, awayTeamId }) {
     if (homeTeamId === awayTeamId) throw conflict("SAME_TEAMS", "Drużyna nie może grać sama ze sobą");
@@ -43,6 +51,7 @@ function createMatchesService({ matchesRepository: repo, competitionsService, ev
 
     async update(id, data) {
       const match = await getRaw(id);
+      assertEditable(match);
       if (match.status === "FINISHED") throw conflict("MATCH_FINISHED", "Nie można edytować zakończonego meczu");
       await checkReferences(data);
       await repo.update(id, data);
@@ -50,7 +59,8 @@ function createMatchesService({ matchesRepository: repo, competitionsService, ev
     },
 
     async remove(id) {
-      if (!(await repo.delete(id))) throw notFound(`Mecz o id ${id} nie istnieje`);
+      assertEditable(await getRaw(id));
+      await repo.delete(id);
     },
 
     /**
@@ -61,6 +71,7 @@ function createMatchesService({ matchesRepository: repo, competitionsService, ev
     async setResult(id, { homeScore, awayScore }) {
       const match = await getRaw(id);
       const current = now();
+      assertEditable(match);
       if (match.status === "CANCELLED" || match.status === "POSTPONED") {
         throw conflict("MATCH_NOT_PLAYED", "Mecz odwołany lub przełożony nie może mieć wyniku");
       }
@@ -74,6 +85,7 @@ function createMatchesService({ matchesRepository: repo, competitionsService, ev
 
     async changeStatus(id, status) {
       const match = await getRaw(id);
+      assertEditable(match);
       if (match.status === "FINISHED") throw conflict("MATCH_FINISHED", "Mecz jest już zakończony");
       await repo.setStatus(id, status);
       return withStarted(await repo.findById(id), now());

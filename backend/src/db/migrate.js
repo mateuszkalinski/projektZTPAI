@@ -37,7 +37,7 @@ async function runMigrations(pool, logger = console) {
 
 module.exports = { runMigrations };
 
-// npm run migrate – uruchomienie ręczne (normalnie migracje odpalają się przy starcie serwera)
+// npm run migrate – uruchomienie ręczne (migracje wykonują się też przy starcie serwera)
 if (require.main === module) {
   const { loadEnvFile, loadConfig } = require("../config");
   const { createPool } = require("./pool");

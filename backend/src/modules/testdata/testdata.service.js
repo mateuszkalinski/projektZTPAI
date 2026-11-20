@@ -1,11 +1,7 @@
-const { notFound } = require("../../common/errors");
-
 /**
- * "Liga Warzyw" – rozgrywki testowe do demonstracji i ręcznego testowania.
- * Admin generuje kolejkę z meczami za kilka minut, gracze typują, mecze się zaczynają
- * (typowanie się zamyka), admin wpisuje wyniki, a punkty liczą się same.
- * Wszystkie reguły biznesowe działają tak samo jak dla prawdziwych meczów.
- * Liga Warzyw nie jest synchronizowana z football-data.org, więc nic jej nie nadpisze.
+ * "Liga Warzyw" – lokalne rozgrywki testowe (bez synchronizacji z football-data.org).
+ * Admin dodaje kolejkę meczów startujących za kilka minut i wpisuje ich wyniki;
+ * obowiązują te same reguły co dla prawdziwych meczów.
  */
 const COMPETITION = { name: "Liga Warzyw", code: "WARZYWA", season: "testowy" };
 
@@ -31,10 +27,6 @@ function shuffle(items, random) {
   }
   return copy;
 }
-
-// realistyczne wyniki: częściej 0–2 gole niż 4+
-const GOALS = [0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 4];
-const randomGoals = (random) => GOALS[Math.floor(random() * GOALS.length)];
 
 function createTestDataService({
   competitionsRepository,
@@ -84,26 +76,6 @@ function createTestDataService({
         created.push(await matchesService.get(id));
       }
       return { competition, stage, kickoffAt, matches: created };
-    },
-
-    /**
-     * Losowe wyniki dla wszystkich rozpoczętych, jeszcze nierozliczonych meczów Ligi Warzyw.
-     * Idzie przez matchesService.setResult – te same reguły i to samo zdarzenie co ręczne wpisanie wyniku.
-     */
-    async finishStartedMatches() {
-      const competition = await competitionsRepository.findCompetitionByCode(COMPETITION.code);
-      if (!competition) throw notFound("Liga Warzyw jeszcze nie istnieje – najpierw wygeneruj kolejkę");
-      const { rows } = await matchesRepository.findPage(
-        { competitionIds: [competition.id], status: "SCHEDULED", to: now() },
-        { page: 0, size: 100 }
-      );
-      const finished = [];
-      for (const match of rows) {
-        finished.push(
-          await matchesService.setResult(match.id, { homeScore: randomGoals(random), awayScore: randomGoals(random) })
-        );
-      }
-      return { finished: finished.length, matches: finished };
     },
   };
 }

@@ -1,5 +1,4 @@
-// Zamiast pisać wszędzie res.status(...), w kodzie rzucamy błąd z odpowiednim statusem.
-// Globalny errorHandler zamienia go na jednolitą odpowiedź JSON.
+// Błędy aplikacji ze statusem HTTP i kodem; errorHandler zamienia je na odpowiedź JSON.
 class AppError extends Error {
   constructor(status, code, message, fieldErrors) {
     super(message);

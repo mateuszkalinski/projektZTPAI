@@ -1,4 +1,4 @@
-// Punktacja 3/1/0 (docelowa punktacja jeszcze do ustalenia – wystarczy podmienić tę funkcję):
+// Punktacja 3/1/0:
 // 3 – dokładny wynik, 1 – trafiony rezultat (zwycięzca albo remis), 0 – pudło.
 const POINTS = Object.freeze({ EXACT: 3, OUTCOME: 1, MISS: 0 });
 

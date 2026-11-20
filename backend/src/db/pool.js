@@ -1,7 +1,6 @@
 const { Pool, types } = require("pg");
 
-// COUNT(...) w Postgresie zwraca bigint, a SUM(...) numeric – pg domyślnie oddaje je jako tekst.
-// Nasze liczby są małe, więc zamieniamy je od razu na zwykłe number.
+// bigint (COUNT) i numeric (SUM) jako number zamiast tekstu.
 types.setTypeParser(20, Number);
 types.setTypeParser(1700, Number);
 

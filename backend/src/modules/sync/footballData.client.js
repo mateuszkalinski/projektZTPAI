@@ -1,5 +1,4 @@
-// Klient zewnętrznego API football-data.org (v4). Darmowy plan: 10 zapytań na minutę.
-// Używamy wbudowanego w Node fetch – bez dodatkowych bibliotek.
+// Klient API football-data.org (v4). Darmowy plan: 10 zapytań na minutę.
 const BASE_URL = "https://api.football-data.org/v4";
 
 function createFootballDataClient({ token, baseUrl = BASE_URL, fetchFn = fetch }) {

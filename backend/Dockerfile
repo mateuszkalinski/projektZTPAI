@@ -9,5 +9,4 @@ COPY migrations ./migrations
 
 USER node
 EXPOSE 8080
-# migracje i dane demo uruchamiają się przy starcie serwera
 CMD ["node", "src/server.js"]

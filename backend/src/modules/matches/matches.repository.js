@@ -8,6 +8,7 @@ const SELECT_MATCH = `
          m.status,
          m.home_score  AS "homeScore",
          m.away_score  AS "awayScore",
+         (m.external_id IS NOT NULL) AS synced,
          json_build_object('id', c.id, 'name', c.name, 'code', c.code, 'season', c.season) AS competition,
          json_build_object('id', ht.id, 'name', ht.name, 'shortName', ht.short_name, 'crestUrl', ht.crest_url) AS "homeTeam",
          json_build_object('id', awt.id, 'name', awt.name, 'shortName', awt.short_name, 'crestUrl', awt.crest_url) AS "awayTeam"

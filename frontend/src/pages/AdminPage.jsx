@@ -7,11 +7,7 @@ const dayOnly = new Intl.DateTimeFormat('pl-PL', { day: 'numeric', month: 'short
 const TEST_CODE = 'WARZYWA'
 const SHOWN_ROUNDS = 3
 
-/**
- * Panel admina: testowa "Liga Warzyw" do demo i ręcznego testowania.
- * Admin dodaje kolejkę z meczami za kilka minut, gracze typują, a po rozpoczęciu
- * admin wpisuje wynik (ręcznie albo losowo) – punkty liczą się same w tle.
- */
+/** Panel admina: kolejki testowej Ligi Warzyw i wpisywanie ich wyników. */
 export default function AdminPage() {
   const [matches, setMatches] = useState(null)
   const [error, setError] = useState(null)
@@ -61,13 +57,6 @@ export default function AdminPage() {
     )
   }
 
-  function randomResults() {
-    run(
-      () => api('/test-data/results', { method: 'POST' }),
-      (r) => (r.finished ? `Wpisano losowe wyniki: ${r.finished} mecz(e). Punkty liczą się w tle.` : 'Brak rozpoczętych meczów bez wyniku.')
-    )
-  }
-
   // grupowanie po kolejkach, najnowsza na górze
   const rounds = []
   for (const m of matches ?? []) {
@@ -76,7 +65,6 @@ export default function AdminPage() {
     else rounds.push({ stage: m.stage, matches: [m] })
   }
   rounds.reverse()
-  const waiting = (matches ?? []).filter((m) => m.started && m.status === 'SCHEDULED').length
 
   return (
     <div className="stack">
@@ -102,12 +90,6 @@ export default function AdminPage() {
           </label>
           <button disabled={busy}>Dodaj kolejkę</button>
         </form>
-        <div className="inline">
-          <button className="secondary" onClick={randomResults} disabled={busy || waiting === 0}>
-            Losowe wyniki ({waiting})
-          </button>
-          <span className="muted small">dla rozpoczętych meczów bez wyniku</span>
-        </div>
         {message && <p className="saved">{message}</p>}
         <ErrorMessage error={error} />
       </section>

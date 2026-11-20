@@ -4,7 +4,7 @@ const { promisify } = require("node:util");
 const scrypt = promisify(crypto.scrypt);
 const KEY_LENGTH = 64;
 
-// Hashowanie haseł wbudowanym w Node algorytmem scrypt (bez zewnętrznej biblioteki).
+// Hashowanie haseł algorytmem scrypt (node:crypto).
 // Zapisywany format: scrypt$<sól hex>$<hash hex>
 async function hashPassword(password) {
   const salt = crypto.randomBytes(16);

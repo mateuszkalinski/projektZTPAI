@@ -95,6 +95,7 @@ module.exports = {
           homeScore: { type: "integer", nullable: true },
           awayScore: { type: "integer", nullable: true },
           started: { type: "boolean" },
+          synced: { type: "boolean", description: "mecz z football-data.org – zmienia go tylko synchronizacja" },
         },
       },
       MatchInput: {
@@ -284,6 +285,9 @@ module.exports = {
       put: {
         tags: ["Matches"],
         summary: "Wpisanie wyniku" + adminOnly + " – punkty liczą się asynchronicznie",
+        description:
+          "Tylko po rozpoczęciu meczu i tylko dla meczów lokalnych (np. Liga Warzyw). " +
+          "Mecze z football-data.org zwracają 409 MATCH_SYNCED – ich wynik przychodzi z synchronizacji.",
         parameters: [idParam()],
         requestBody: body(ref("Score")),
         responses: { 200: ok("OK", ref("Match")), ...errors(400, 403, 404, 409) },
@@ -501,7 +505,7 @@ module.exports = {
         summary: "Liga Warzyw: nowa kolejka testowa z meczami za X minut" + adminOnly,
         description:
           "Tworzy (jeśli trzeba) rozgrywki „Liga Warzyw” z 10 drużynami i dodaje kolejkę meczów rozpoczynających się za podaną liczbę minut. " +
-          "Do testów i demo: typujesz, mecz się zaczyna, wpisujesz wynik (PUT /api/matches/{id}/result albo POST /api/test-data/results).",
+          "Wyniki wpisuje się przez PUT /api/matches/{id}/result po rozpoczęciu meczów.",
         requestBody: {
           required: false,
           content: {
@@ -517,13 +521,6 @@ module.exports = {
           },
         },
         responses: { 201: ok("Kolejka utworzona"), ...errors(400, 403) },
-      },
-    },
-    "/api/test-data/results": {
-      post: {
-        tags: ["Test data"],
-        summary: "Liga Warzyw: losowe wyniki dla rozpoczętych meczów" + adminOnly,
-        responses: { 200: ok("Wyniki wpisane, punkty liczą się asynchronicznie"), ...errors(403, 404) },
       },
     },
     "/api/leagues/{leagueId}/predictions/copy": {

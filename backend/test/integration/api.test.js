@@ -199,3 +199,26 @@ test("liga: dołączanie, typowanie przed meczem, blokada po rozpoczęciu, punkt
   assert.equal(table.status, 200);
   assert.equal(table.body.totalElements, 2);
 });
+
+test("Liga Warzyw: kolejka testowa tylko dla ADMIN, mecze otwarte do typowania", async () => {
+  const userToken = await newUser();
+  const asUser = await call("POST", "/test-data/round", { token: userToken, body: { minutes: 5 } });
+  assert.equal(asUser.status, 403);
+
+  const adminToken = await login("admin", "admin-test-password");
+  const invalid = await call("POST", "/test-data/round", { token: adminToken, body: { minutes: 0 } });
+  assert.equal(invalid.status, 400);
+
+  const round = await call("POST", "/test-data/round", { token: adminToken, body: { minutes: 5, matches: 3 } });
+  assert.equal(round.status, 201);
+  assert.equal(round.body.stage, "1. kolejka");
+  assert.equal(round.body.matches.length, 3);
+  assert.ok(round.body.matches.every((m) => m.status === "SCHEDULED" && !m.started));
+
+  // wyniku nie da się wpisać przed rozpoczęciem meczu
+  const early = await call("PUT", `/matches/${round.body.matches[0].id}/result`, {
+    token: adminToken,
+    body: { homeScore: 1, awayScore: 0 },
+  });
+  assert.equal(early.status, 409);
+});

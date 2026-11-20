@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "5432:5432"   # żeby backend odpalony lokalnie (npm run dev) i testy też mogły się podłączyć
+      - "5432:5432"   # dostęp dla backendu uruchomionego lokalnie i testów integracyjnych
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:

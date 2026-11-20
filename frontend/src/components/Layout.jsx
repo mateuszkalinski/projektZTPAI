@@ -26,7 +26,7 @@ export default function Layout() {
         )}
       </nav>
 
-      {/* winieta jak w starej gazecie: tytuł i gwizdek w czerwonym krążku */}
+      {/* winieta: tytuł i gwizdek */}
       <header className="masthead">
         <div className="masthead-row">
           <Link to="/" className="flag">

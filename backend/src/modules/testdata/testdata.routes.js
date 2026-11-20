@@ -18,10 +18,6 @@ function createTestDataRouter({ testDataService }) {
     }
   );
 
-  router.post("/results", async (req, res) => {
-    res.json(await testDataService.finishStartedMatches());
-  });
-
   return router;
 }
 

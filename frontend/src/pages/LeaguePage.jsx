@@ -194,7 +194,7 @@ export default function LeaguePage() {
 
 /**
  * Wyjście z ligi (członek) albo usunięcie ligi (założyciel lub admin).
- * Założyciel nie może wyjść z własnej ligi – to reguła biznesowa backendu.
+ * Założyciel nie może wyjść z własnej ligi.
  */
 function LeagueActions({ league, onUpdated }) {
   const { user } = useAuth()

@@ -1,4 +1,4 @@
-### Szybkie testy ręczne (rozszerzenie REST Client w VS Code)
+### Przykładowe zapytania (REST Client)
 @baseUrl = http://localhost:8080/api
 @token = wklej-accessToken-z-logowania
 
